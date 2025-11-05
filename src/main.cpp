@@ -1,6 +1,9 @@
 #include <iostream>
 
 #include <SFML/Graphics.hpp>
+
+#include <../TestGame/Worlds/TestGameWorld.h>
+
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 int main() {
     // TIP Press <shortcut actionId="RenameElement"/> when your caret is at the <b>lang</b> variable name to see how CLion can help you rename it.
@@ -17,22 +20,38 @@ int main() {
         std::cout << "i = " << i << std::endl;
     }
 
-    while (window.isOpen()) {
+    ECS_Game::TestGameWorld GameWorld;
+    GameWorld.Initialise(window );
+
+    float accumulator = 0.0f;
+    const sf::Time update_ms = sf::seconds(1.f / 60.f);
+
+    sf::Time elapsed = clock.restart();
+    while (window.isOpen())
+    {
+        accumulator += elapsed.asSeconds();
+
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
 
-        if (clock.getElapsedTime().asSeconds() >= 50) {
-            window.close();
+        elapsed += clock.restart();
+
+        // PROCESS WORLDS
+        while (elapsed >= update_ms)
+        {
+            elapsed -= update_ms;
+            GameWorld.Update(update_ms.asSeconds());
         }
 
+        // RENDER WORLDS
+        float tween = (update_ms - elapsed) / update_ms;
         window.clear(sf::Color::Black);
-        window.draw(shape);
+        GameWorld.Render(tween);
         window.display();
     }
 
     return 0;
-    // TIP See CLion help at <a href="https://www.jetbrains.com/help/clion/">jetbrains.com/help/clion/</a>. Also, you can try interactive lessons for CLion by selecting 'Help | Learn IDE Features' from the main menu.
 }

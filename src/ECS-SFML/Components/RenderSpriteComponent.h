@@ -3,28 +3,29 @@
 //
 
 #pragma once
-#include "IComponent.h"
+#include "Components/IComponent.h"
 
 #include<SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
 
 namespace ECS_SFML
 {
-    class RenderSpriteComponent : public IComponent<RenderSpriteComponent>
+    class RenderSpriteComponent : public ECS::IComponent<RenderSpriteComponent>
     {
     public:
-        virtual ~RenderSpriteComponent() = default;
+        ~RenderSpriteComponent() override = default;
 
         sf::Vector2f position = sf::Vector2f(0,0); //relative to transform, if we have one, otherwise from 0,0
-        sf::Sprite* sprite = nullptr;
+        int textureId = -1;
         float angle = 0;
 
         static const char* GetName() { return "RenderSpriteComponent"; }
+        static bool CanEntityHaveMultiple() { return true; }
 
     protected:
-        inline virtual void ClearInternal() override
+        inline void ClearInternal() override
         {
-            sprite = nullptr;
+            textureId = -1;
             angle = 0;
             position = sf::Vector2f();
         }

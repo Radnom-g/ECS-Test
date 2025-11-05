@@ -21,5 +21,6 @@ namespace ECS_SFML
         }
     public:
         static const char* GetName() { return "TransformComponent"; }
+        static bool CanEntityHaveMultiple() { return false; }
     };
 } // ECS_SFML

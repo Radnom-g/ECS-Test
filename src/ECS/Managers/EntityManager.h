@@ -10,12 +10,12 @@
 
 namespace ECS
 {
-    class ControllerManager;
+    class AccessorManager;
 
     template<class T>
-    class ComponentController;
+    class ComponentAccessor;
     class TreeComponent;
-    typedef ComponentController<TreeComponent> TreeController;
+    typedef ComponentAccessor<TreeComponent> TreeController;
 
     // The EntityManager is where we can access, create and kill Entities.
     // It keeps a list of Entities in an array.
@@ -23,7 +23,7 @@ namespace ECS
     {
 
     public:
-        bool Initialise(ControllerManager* _controllerManager, int _initialCapacity, int _maxCapacity);
+        bool Initialise(AccessorManager* _controllerManager, int _initialCapacity, int _maxCapacity);
         ~EntityManager();
 
         // Deactivates all the entities.
@@ -39,6 +39,8 @@ namespace ECS
         void LateDeactivateEntity(int _id); //Deactivate at end of frame
 
         void ProcessEndOfFrame();
+
+        int GetMaxCapacity() const { return maxCapacity; }
 
     private:
         // Finds an inactive entity in the list to activate
@@ -59,7 +61,7 @@ namespace ECS
         // We cannot ever make any more entities than this.
         int maxCapacity = 100;
 
-        ControllerManager* controllerManager = nullptr;
+        AccessorManager* controllerManager = nullptr;
 
         TreeController* treeController = nullptr;
 

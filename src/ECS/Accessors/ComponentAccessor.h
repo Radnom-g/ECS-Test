@@ -7,17 +7,23 @@
 #include <map>
 #include <vector>
 
-#include "IComponentController.h"
+#include "IComponentAccessor.h"
 #include "Components/IComponent.h"
 
 namespace ECS
 {
-	// Templated ComponentController for managing a single Component type.
+	// Templated ComponentAccessor for managing a single Component type.
+	// In most cases you can just define this directly and use it rather than creating a unique Controller,
+	// i.e. ComponentAccessor<TreeComponent> treeAccessor;
+
+	// In some cases you may want to do something more specific with the components, i.e. Depth has extra processing
+	// to maintain a map of depth->entities.
+
     template<class T>
-    class ComponentController: public IComponentController
+    class ComponentAccessor: public IComponentAccessor
     {
     public:
-	    ~ComponentController() override
+	    ~ComponentAccessor() override
 	    {
 	    	// Delete any temp components we added.
 	    	using iterator = std::vector<T*>::iterator;
@@ -29,7 +35,7 @@ namespace ECS
 	    	addedComponents.clear();
 	    }
 
-	    bool Initialise(int _controllerId, int _initialCapacity, int _maxCapacity)
+	    virtual bool Initialise(int _initialCapacity, int _maxCapacity)
 	    {
 	    	if (isInitialised)
 		    {
@@ -40,7 +46,8 @@ namespace ECS
 	    	maxCapacity = _maxCapacity;
 
 	    	componentName = T::GetName();
-	    	controllerId = _controllerId;
+	    	canHaveMultiple = T::CanEntityHaveMultiple();
+
 	    	isInitialised = true;
 
 	    	components.resize(_initialCapacity);
@@ -53,9 +60,12 @@ namespace ECS
 	    	return true;
 	    }
 
-
 	    bool HasComponent(int _entityId)
 		{
+	    	if (canHaveMultiple)
+	    	{
+	    		return (entityIdComponentIndexMapMultiple.find(_entityId) != entityIdComponentIndexMapMultiple.end());
+	    	}
 			return (entityIdComponentIndexMap.find(_entityId) != entityIdComponentIndexMap.end());
 		}
 
@@ -64,20 +74,36 @@ namespace ECS
 			return (componentIdIndexMap.find(_componentId) != componentIdIndexMap.end());
 		}
 
+    	// Returns the first Component if there are multiple.
 		T* GetComponent(int _entityId)
 		{
+	    	if (canHaveMultiple)
+	    	{
+	    		// We may have multiple -
+	    		// use 'GetComponents' instead and return the first (if any).
+	    		std::vector<T*> componentList;
+	    		if (GetComponents(_entityId, componentList))
+	    		{
+	    			return componentList[0];
+	    		}
+	    		return nullptr;
+	    	}
+
 			std::map<int, int>::iterator iter = entityIdComponentIndexMap.find(_entityId);
 
 			if (iter == entityIdComponentIndexMap.end())
 			{
+				// Cannot find the index for this Entity ID.
 				return nullptr;
 			}
 			else if ((*iter).second < (int)components.size())
 			{
+				// Index is within our main components array.
 				return &components[(*iter).second];
 			}
 			else if (addedComponents.size() > 0)
 			{
+				// Check if the Index is within our Pending list of components.
 				for (typename std::vector<T*>::iterator iter = addedComponents.begin();
 				     iter != addedComponents.end(); ++iter)
 				{
@@ -90,7 +116,56 @@ namespace ECS
 			return nullptr;
 		}
 
-		T* AddComponent(int _entityId)
+    	bool GetComponents(int _entityId, std::vector<T*>& _outList)
+	    {
+	    	_outList.clear();
+
+	    	// If we can't have multiple, then we don't use the List map.
+	    	// Use GetComponent instead and get the only (if any) from the singular list.
+	    	if (!canHaveMultiple)
+	    	{
+	    		T* first = GetComponent(_entityId);
+	    		if (first)
+	    		{
+	    			_outList.push_back(first);
+	    			return true;
+	    		}
+	    		return false;
+	    	}
+
+	    	auto mapIter = entityIdComponentIndexMapMultiple.find(_entityId);
+			if (mapIter == entityIdComponentIndexMapMultiple.end())
+			{
+				return false;
+			}
+
+	    	std::vector<int>& entityComponentList = mapIter->second;
+
+	    	for (int index : entityComponentList)
+	    	{
+	    		if (index < (int)components.size())
+	    		{
+	    			// Index is within our main components array.
+	    			_outList.push_back( &components[index] );
+	    		}
+	    		else if (!addedComponents.empty())
+	    		{
+	    			// Check if the Index is within our Pending list of components.
+	    			for (typename std::vector<T*>::iterator iter = addedComponents.begin();
+						 iter != addedComponents.end(); ++iter)
+	    			{
+	    				if ((*iter)->entityId == _entityId)
+	    				{
+	    					return (*iter);
+	    				}
+	    			}
+	    		}
+	    	}
+
+	    	return (!_outList.empty());
+	    }
+
+		virtual T* AddComponent(int _entityId)
 		{
 			if (_entityId < 0)
 			{
@@ -138,14 +213,21 @@ namespace ECS
 			// Point the component ID map to the component index
 			componentIdIndexMap[component->entityId] = componentIndex;
 
-			// Point the entity map to the component index
-			entityIdComponentIndexMap[_entityId] = componentIndex;
+	    	if (canHaveMultiple)
+	    	{
+	    		entityIdComponentIndexMapMultiple.insert(std::make_pair(_entityId, componentIndex));
+	    	}
+	    	else
+	    	{
+	    		// Point the entity map to the component index
+	    		entityIdComponentIndexMap[_entityId] = componentIndex;
+	    	}
 
 			return component;
 		}
 
 		// This will return a list of entities that have this component.
-		void GetEntitiesWithComponent(std::vector<int>& _entityList)
+		virtual void GetEntitiesWithComponent(std::vector<int>& _entityList)
 		{
 			// We keep this map of entity ID -> component index up-to-date, so we can just return its keys.
 			_entityList.clear();
@@ -155,7 +237,7 @@ namespace ECS
 			}
 		}
 
-		void GetComponents(std::vector<T*>& _componentList)
+		virtual void GetComponents(std::vector<T*>& _componentList)
 		{
 			_componentList.clear();
 			for (typename std::vector<T>::iterator iter = components.begin();
@@ -163,7 +245,7 @@ namespace ECS
 			{
 				_componentList.push_back(&(*iter));
 			}
-			if (addedComponents.size() > 0)
+			if (!addedComponents.empty())
 			{
 				for (typename std::vector<T*>::iterator iter = addedComponents.begin();
 				     iter != addedComponents.end(); ++iter)
@@ -174,7 +256,7 @@ namespace ECS
 		}
 
 		// This will take a list of entity IDs and remove entities that don't have this component
-		void FilterKeepEntitiesWithComponent(std::vector<int>& _entityListFilter)
+		virtual void FilterKeepEntitiesWithComponent(std::vector<int>& _entityListFilter)
 		{
 			std::vector<int>::iterator iter = _entityListFilter.begin();
 			while (iter != _entityListFilter.end())
@@ -192,7 +274,7 @@ namespace ECS
 		}
 
 		// This will take a list of entity IDs and remove entities that DO have this component
-		void FilterKeepEntitiesWithoutComponent(std::vector<int>& _entityListFilter)
+		virtual void FilterKeepEntitiesWithoutComponent(std::vector<int>& _entityListFilter)
 		{
 			std::vector<int>::iterator iter = _entityListFilter.begin();
 			while (iter != _entityListFilter.end())
@@ -209,12 +291,12 @@ namespace ECS
 			}
 		}
 
-		void EntityDestroyed(int _entityId) override
+		virtual void EntityDestroyed(int _entityId) override
 		{
 			RemoveComponent(_entityId);
 		}
 
-		void RemoveComponent(int _entityId)
+		virtual void RemoveComponent(int _entityId)
 		{
 			AbstractComponent* pCom = static_cast<AbstractComponent*>(GetComponent(_entityId));
 
@@ -230,7 +312,7 @@ namespace ECS
 		void ProcessEndOfFrame() override
 		{
 			// Ideally we won't hit this at all, and we'd preallocate enough space.
-			if (addedComponents.size() > 0)
+			if (!addedComponents.empty())
 			{
 				// Figure out how big we need to resize the Component list to fit the new Components.
 
@@ -277,7 +359,7 @@ namespace ECS
 
 	private:
 		// Finds an inactive component in the list
-		int GetNextInactiveComponent()
+		virtual int GetNextInactiveComponent()
 		{
 			int capacity = (int)components.size();
 			for (int i = 0; i < capacity; ++i)
@@ -292,15 +374,18 @@ namespace ECS
 			return -1;
 		}
 
-	private:
-		bool isInitialised = false;
+
+    	const char* GetComponentName() const override { return componentName; }
+    	bool CanHaveMultipleComponentsAssignedToOneEntity() const { return  canHaveMultiple; }
+
+	protected:
 
     	// cannot ever exceed this value
     	int maxCapacity = 100000;
 
 		const char* componentName = "INVALID";
-		int controllerId = -1;
 
+    	bool canHaveMultiple = false;
 
 		// The component's index will remain constant, but the ID will change
 		// so that we can track when a component is destroyed.
@@ -317,7 +402,12 @@ namespace ECS
 		std::map<int, int> componentIdIndexMap;
 
 		// Map of entity ID to component index for quick lookup.
+    	// Used for Components that cannot have multiple of the Component assigned to a single Entity.
 		std::map<int, int> entityIdComponentIndexMap;
+
+    	// Map of entity ID to a vector of components that belong to it (via index).
+    	// Used for Component types that can have multiple of the same Component assigned to a single Entity.
+    	std::map<int, std::vector<int>> entityIdComponentIndexMapMultiple;
 
 		// Our components in contiguous memory.
 		std::vector<T> components;

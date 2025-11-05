@@ -20,5 +20,6 @@ namespace ECS
         }
 
         static const char* GetName() { return "DepthComponent"; }
+        static bool CanEntityHaveMultiple() { return false; }
     };
 } // ECS

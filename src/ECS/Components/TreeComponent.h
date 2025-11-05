@@ -69,6 +69,7 @@ namespace ECS
         }
 
         static const char *GetName() { return "TreeComponent"; }
+        static bool CanEntityHaveMultiple() { return false; }
 
     private:
         inline void ClearInternal() override

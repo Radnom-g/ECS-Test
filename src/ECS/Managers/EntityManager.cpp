@@ -7,12 +7,12 @@
 #include <cassert>
 #include <debugapi.h>
 
-#include "ControllerManager.h"
+#include "AccessorManager.h"
 #include "Components/TreeComponent.h"
 
 namespace ECS
 {
-	bool EntityManager::Initialise(ControllerManager* _controllerManager, int _initialCapacity, int _maxCapacity)
+	bool EntityManager::Initialise(AccessorManager* _controllerManager, int _initialCapacity, int _maxCapacity)
 	{
 		if (isInitialised)
 		{
@@ -25,7 +25,11 @@ namespace ECS
 		assert(_initialCapacity > 0 && "Initial Capacity must be > 0.");
 		assert(_maxCapacity >= _initialCapacity && "Max Capacity must be >= Initial Capacity");
 
-		treeController = controllerManager->GetComponentController<TreeComponent>();
+		treeController = controllerManager->GetComponentAccessor<TreeComponent>();
+		if (treeController == nullptr)
+		{
+			treeController = controllerManager->CreateComponentAccessor<TreeComponent>();
+		}
 
 		assert(treeController && "Cannot get TreeComponent component manager.");
 

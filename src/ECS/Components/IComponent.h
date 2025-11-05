@@ -7,12 +7,17 @@
 
 namespace ECS
 {
-    // IComponent uses the 'Curiously Recurring Template Pattern' so that I can get a static Name out of the classes.
+    // IComponent uses the 'Curiously Recurring Template Pattern' so that I can have virtual static functions
+    // in inherited classes.
 
     // AbstractComponent Base class has a pure virtual function for cloning.
     // We can also use AbstractComponent when storing our components in memory without needing to declare template,
     // i.e. std::vector<AbstractComponent> components;
     // instead of: std::vector<IComponent<DepthComponent>> components;
+
+    // derived classes MUST implement:
+    // public static const char* GetName() { return "ComponentName"; }
+    // public static bool CanEntityHaveMultiple() { return true/false; }
     class AbstractComponent
     {
     public:
@@ -41,6 +46,7 @@ namespace ECS
     protected:
         virtual void ClearInternal() = 0;
 
+
     };
 
     // A Component is a plain datatype with no behaviour.
@@ -65,6 +71,6 @@ namespace ECS
 
     public:
         static const char* GetName() { return Derived::GetName(); }
-        // derived classes MUST implement public 'static const char* GetName() { return "ComponentName";}'
+        static bool CanEntityHaveMultiple() { return Derived::CanEntityHaveMultiple(); }
     };
 } // ECS

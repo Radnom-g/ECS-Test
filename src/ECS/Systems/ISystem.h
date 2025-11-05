@@ -15,13 +15,18 @@ namespace ECS
         // something like the below:
         // bool Initialise(EntityManager* _entityManager, ComponentManager& _componentManager);
 
-        void Process(float _deltaTick);
+        void Process(float _deltaSeconds);
+        void Render(float _deltaTween);
 
         virtual const char* GetSystemName() = 0;
 
     protected:
         virtual void ProcessInternal(float _deltaTick) = 0;
-        bool ConfirmInitialised();
+        virtual void RenderInternal(float _deltaTick) = 0;
+
+        virtual bool GetDoesProcessTick() = 0;
+        virtual bool GetDoesRenderTick() = 0;
+
         bool isInitialised = false;
 
 
