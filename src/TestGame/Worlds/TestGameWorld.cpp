@@ -7,86 +7,81 @@
 #include "../../ECS-SFML/Systems/RenderSystem.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../ECS-SFML/Components/RenderSpriteComponent.h"
+#include "Worlds/WorldContext.h"
+#include "../ECS-SFML/Worlds/SFMLWorldContext.h"
+
 #include "Worlds/World.h"
 
 namespace ECS_Game
 {
-    bool TestGameWorld::Initialise()
+    bool TestGameWorld::Initialise(ECS::WorldSettings *_worldSettings, sf::RenderWindow *_renderWindow)
     {
-        maxEntityCount = 10000;
-        return ECS::World::Initialise();
+        renderWindow = _renderWindow;
+        Initialise(_worldSettings);
+        return true;
     }
 
-    bool TestGameWorld::Initialise(sf::RenderWindow &_window)
+    bool TestGameWorld::Initialise(ECS::WorldSettings *_worldSettings)
     {
-        bool success = Initialise();
+        return World::Initialise(_worldSettings);
+    }
 
-        renderSystem.Initialise(&entityManager, &accessorManager, &resourceManager, &_window);
+    void TestGameWorld::InitialiseInternal()
+    {
 
-        ECS::DepthAccessor* depthAccessor = dynamic_cast<ECS::DepthAccessor*>(accessorManager.GetComponentAccessor<ECS::DepthComponent>());
-        if (depthAccessor == nullptr)
-        {
-            depthAccessor = new ECS::DepthAccessor();
-            depthAccessor->Initialise(100, entityManager.GetMaxCapacity());
-            accessorManager.RegisterComponentAccessor(depthAccessor);
-        }
-        ECS_SFML::TransformController* transformController = accessorManager.GetComponentAccessor<ECS_SFML::TransformComponent>();
-        if (transformController == nullptr)
-        {
-            transformController = accessorManager.CreateComponentAccessor<ECS_SFML::TransformComponent>();
-        }
-        ECS_SFML::RenderSpriteController* spriteController = accessorManager.GetComponentAccessor<ECS_SFML::RenderSpriteComponent>();
-        if (spriteController == nullptr)
-        {
-            spriteController = accessorManager.CreateComponentAccessor<ECS_SFML::RenderSpriteComponent>();
-        }
+        assert(worldContextSFML && "World Context is not SFML context");
+
+        renderSystem.Initialise(worldContextSFML);
 
         int spriteIndex = -1;
         resourceManager.GetOrLoadTexture("resources/qmark_block.png", spriteIndex);
+
+        ECS_SFML::TransformComponent* transformComponent = componentManager.GetComponent<ECS_SFML::TransformComponent>();
+        ECS_SFML::RenderSpriteComponent* spriteComponent = componentManager.GetComponent<ECS_SFML::RenderSpriteComponent>();
 
         for (int ii = 0; ii < 10; ii++)
         {
             int newEnt = entityManager.ActivateEntity("Block");
 
-             accessorManager.GetComponentAccessor<ECS_SFML::TransformComponent>();
+            int newT = transformComponent->AddComponent(newEnt);
+            int newS = spriteComponent->AddComponent(newEnt);
 
-            ECS::DepthComponent* dcom = depthAccessor->AddComponent(newEnt);
-            if (dcom)
-            {
-                dcom->depth = std::rand() % 3;
-            }
+            spriteComponent->SetTextureIndex(newS, spriteIndex);
+            transformComponent->SetDepth(newT, std::rand() % 3);
 
-            ECS_SFML::TransformComponent* tcom = transformController->AddComponent(newEnt);
-            if (tcom)
-            {
-                tcom->position = sf::Vector2f( (std::rand() % 10) * 16, (std::rand() % 10) * 16 );
-            }
+            sf::Vector2f randPos( (std::rand() % 10) * 16, (std::rand() % 10) * 16 );
 
-            ECS_SFML::RenderSpriteComponent* rcom = spriteController->AddComponent(newEnt);
-            if (rcom)
-            {
-                rcom->textureId = spriteIndex;
-            }
-
+            transformComponent->SetPosition(newT, randPos);
         }
-
-        return success;
     }
 
-    void TestGameWorld::Reinitialise()
+    void TestGameWorld::ReinitialiseInternal()
     {
-        ECS::World::Reinitialise();
     }
 
-    void TestGameWorld::Update(float _deltaSeconds)
+    void TestGameWorld::UpdateInternal(float _deltaSeconds)
     {
-        ECS::World::Update(_deltaSeconds);
+
     }
 
-    void TestGameWorld::Render(float _deltaTween)
+    void TestGameWorld::RenderInternal(float _deltaTween)
     {
-        ECS::World::Render(_deltaTween);
-
         renderSystem.Render(_deltaTween);
+    }
+
+    void TestGameWorld::CreateWorldContext()
+    {
+        worldContext = new ECS_SFML::SFMLWorldContext();
+
+        worldContextSFML = dynamic_cast<ECS_SFML::SFMLWorldContext*>(worldContext);
+
+        worldContext->world = this;
+        worldContext->entityManager = &entityManager;
+        worldContext->componentManager = &componentManager;
+        worldContext->worldSettings = worldSettings;
+
+        worldContextSFML->resourceManager = &resourceManager;
+        worldContextSFML->renderWindow = renderWindow;
+
     }
 } // ECS_Game

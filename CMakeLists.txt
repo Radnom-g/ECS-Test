@@ -15,26 +15,14 @@ FetchContent_MakeAvailable(SFML)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(ECSTest src/main.cpp
-        src/ECS/Accessors/ComponentAccessor.h
-        src/ECS/Accessors/DepthAccessor.cpp
-        src/ECS/Accessors/DepthAccessor.h
-        src/ECS/Accessors/IComponentAccessor.h
-        src/ECS/Components/DepthComponent.h
         src/ECS/Components/IComponent.h
         src/ECS/Components/TreeComponent.h
-        src/ECS/Entities/Entity.cpp
-        src/ECS/Entities/Entity.h
-        src/ECS/Managers/AccessorManager.h
-        src/ECS/Managers/AccessorManager.cpp
-        src/ECS/Managers/EntityManager.cpp
-        src/ECS/Managers/EntityManager.h
-        src/ECS/Managers/RenderManager.cpp
-        src/ECS/Managers/RenderManager.h
+        src/ECS/Entities/EntityManager.cpp
+        src/ECS/Entities/EntityManager.h
         src/ECS/Systems/ISystem.cpp
         src/ECS/Systems/ISystem.h
         src/ECS/Worlds/World.cpp
         src/ECS/Worlds/World.h
-        src/ECS-SFML/Accessors/AccessorTypes.h
         src/ECS-SFML/Components/RenderSpriteComponent.h
         src/ECS-SFML/Components/TransformComponent.h
         src/ECS-SFML/Managers/ResourceManager.cpp
@@ -46,6 +34,20 @@ add_executable(ECSTest src/main.cpp
         src/ECS-SFML/Systems/TransformSystem.cpp
         src/ECS-SFML/Systems/TransformSystem.h
         src/ECS-SFML/Systems/TransformSystem.h
+        src/ECS/Components/ComponentManager.cpp
+        src/ECS/Components/ComponentManager.h
+        src/ECS/Components/IComponent.cpp
+        src/ECS/Components/IComponent.cpp
+        src/ECS/Worlds/WorldContext.h
+        src/ECS/Worlds/WorldContext.h
+        src/ECS-SFML/Components/TransformComponent.cpp
+        src/ECS/Components/TreeComponent.cpp
+        src/ECS-SFML/Components/RenderSpriteComponent.cpp
+        src/ECS-SFML/Components/Transform.cpp
+        src/ECS-SFML/Components/Transform.h
+        src/ECS-SFML/Worlds/SFMLWorldContext.h
+        src/ECS/Worlds/WorldSettings.h
+        src/ECS/Components/ComponentSettings.h
 )
 target_include_directories(ECSTest PRIVATE src/ECS)
 target_compile_features(ECSTest PRIVATE cxx_std_17)

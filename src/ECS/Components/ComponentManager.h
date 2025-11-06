@@ -1,0 +1,41 @@
+//
+// Created by Radnom on 5/11/2025.
+//
+
+#pragma once
+#include "Components/IComponent.h"
+
+namespace ECS
+{
+    class ComponentManager
+    {
+    public:
+        ~ComponentManager();
+
+        void OnEntityDestroyed(int _entityId);
+
+        void InitialiseComponents(WorldContext* _context);
+        void RegisterComponent(ComponentSettings* _componentSettings, IComponent* _component);
+
+        void UpdateComponents(float _deltaTime);
+
+        template <typename T>
+        T* GetComponent()
+        {
+		    static_assert(std::is_base_of_v<IComponent, T>, "T must derive from IComponent");
+            for (IComponent* comp : components)
+            {
+                T* result = dynamic_cast<T*>(comp);
+                if (result)
+                {
+                    return result;
+                }
+            }
+            return nullptr;
+        }
+
+    protected:
+        std::vector<IComponent*> components;
+
+    };
+} // ECS

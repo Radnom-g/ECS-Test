@@ -8,26 +8,75 @@
 #include<SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
 
+#include "Transform.h"
+
+namespace ECS
+{
+    class TreeComponent;
+}
+
 namespace ECS_SFML
 {
-    class RenderSpriteComponent : public ECS::IComponent<RenderSpriteComponent>
+    class TransformComponent;
+}
+
+namespace ECS_SFML
+{
+    // This is a component that has a reference to a Texture ID (loaded by ResourceManager).
+    // It also has a local offset and angle.
+    class RenderSpriteComponent : public ECS::IComponent
     {
     public:
         ~RenderSpriteComponent() override = default;
 
-        sf::Vector2f position = sf::Vector2f(0,0); //relative to transform, if we have one, otherwise from 0,0
-        int textureId = -1;
-        float angle = 0;
+        // This will check up the tree.
+        // Not const, as TransformComponent will cache the position.
+        ECS_SFML::Transform GetWorldTransform(int _componentIndex, float _frameDelta);
 
-        static const char* GetName() { return "RenderSpriteComponent"; }
-        static bool CanEntityHaveMultiple() { return true; }
+        [[nodiscard]] sf::Vector2f GetRelativePosition(int _componentIndex, float _frameDelta) const;
+
+        [[nodiscard]] sf::Vector2f GetRelativeScale(int _componentIndex, float _frameDelta) const;
+
+        [[nodiscard]] float GetRelativeRotation(int _componentIndex, float _frameDelta) const;
+
+        [[nodiscard]] int GetTextureIndex(int _componentIndex) const;
+
+        // This is relative, if we have any transform and/or parents.
+        void SetPosition(int _componentIndex, const sf::Vector2f& _position);
+        // This is relative, if we have any transform and/or parents.
+        void SetScale(int _componentIndex, const sf::Vector2f& _scale);
+        // This is relative, if we have any transform and/or parents.
+        void SetRotation(int _componentIndex, float _rotation);
+
+        void SetTextureIndex(int _componentIndex, int _textureIndex);
+
+
+        [[nodiscard]] const char* GetName() const override { return "RenderSpriteComponent"; }
+        [[nodiscard]] bool IsUniquePerEntity() const override { return false; }
+        [[nodiscard]] bool CanInterpolate() const override { return true; }
 
     protected:
-        inline void ClearInternal() override
-        {
-            textureId = -1;
-            angle = 0;
-            position = sf::Vector2f();
-        }
+        bool InitialiseInternal(ECS::WorldContext* context, int _initialCapacity, int _maxCapacity) override;
+        void AddComponentInternal(int _entityId, int _componentIndex) override;
+        void ClearComponentAtIndexInternal(int _componentIndex) override;
+        void SetCapacityInternal(int _newCapacity) override;
+        void ProcessPhysicsInternal(float _delta) override;
+
+    protected:
+
+        // So that we can get our position relative to our transform (if any) or parent (if any).
+        const ECS::TreeComponent* treeComponent = nullptr;
+        TransformComponent* transformComponent = nullptr;
+
+        // Component data:
+        std::vector<sf::Vector2f> position{};
+        std::vector<sf::Vector2f> positionPrev{};
+        std::vector<sf::Vector2f> scale{};
+        std::vector<sf::Vector2f> scalePrev{};
+        std::vector<float> rotation{};
+        std::vector<float> rotationPrev{};
+
+        std::vector<int> textureId{};
+
     };
 } // ECS_SFML

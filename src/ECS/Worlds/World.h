@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include "Managers/AccessorManager.h"
-#include "Managers/EntityManager.h"
+#include "WorldSettings.h"
+#include "../Entities/EntityManager.h"
+#include "Components/ComponentManager.h"
 
 namespace ECS
 {
@@ -16,20 +17,41 @@ namespace ECS
     {
 
     public:
-        virtual ~World() = default;
+        virtual ~World();
 
-        virtual bool Initialise();
-        virtual void Reinitialise();
+        // The World will own the World Settings pointer and destroy it
+        virtual bool Initialise(WorldSettings* _worldSettings);
+        void Reinitialise();
 
-        virtual void Update(float _deltaSeconds);
+        void Update(float _deltaSeconds);
 
         // _deltaTween between 0-1, from previous frame to next frame.
         // So that we can have a fixed update/physics tick, but smooth graphics lerping from prev. to next frame
-        virtual void Render(float _deltaTween);
+        void Render(float _deltaTween);
+
+        inline WorldContext* GetWorldContext() const;
 
     protected:
+        // Derived classes may need to create a derived WorldContext struct in here.
+        virtual void CreateWorldContext();
+
+        // Derived classes may want to define their own components and register them with componentManager in here.
+        virtual void CreateAndRegisterComponents();
+
+        // After registering all Components, they are initialised.
+        virtual void InitialiseComponents();
+
+        virtual void InitialiseInternal() {}
+        virtual void ReinitialiseInternal() {}
+        virtual void UpdateInternal(float _deltaSeconds) {}
+        virtual void RenderInternal(float _deltaTween) {}
+
         EntityManager entityManager = EntityManager();
-        AccessorManager accessorManager = AccessorManager();
+        ComponentManager componentManager = ComponentManager();
+
+
+        WorldContext* worldContext = nullptr;
+        WorldSettings* worldSettings = nullptr;
 
         bool isInitialised = false;
         int defaultEntityCount = 1;
