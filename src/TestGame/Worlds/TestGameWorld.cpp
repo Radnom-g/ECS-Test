@@ -5,6 +5,7 @@
 #include "TestGameWorld.h"
 
 #include "../../ECS-SFML/Systems/RenderSystem.h"
+#include "../../ECS-SFML/Systems/TransformSystem.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../ECS-SFML/Components/RenderSpriteComponent.h"
 #include "Worlds/WorldContext.h"
@@ -31,6 +32,10 @@ namespace ECS_Game
 
         assert(worldContextSFML && "World Context is not SFML context");
 
+        worldContextSFML->transformSystem = &transformSystem;
+        worldContextSFML->renderSystem = &renderSystem;
+
+        transformSystem.Initialise(worldContextSFML);
         renderSystem.Initialise(worldContextSFML);
 
         int spriteIndex = -1;
@@ -61,7 +66,7 @@ namespace ECS_Game
 
     void TestGameWorld::UpdateInternal(float _deltaSeconds)
     {
-
+        transformSystem.Process(_deltaSeconds);
     }
 
     void TestGameWorld::RenderInternal(float _deltaTween)

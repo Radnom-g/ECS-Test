@@ -23,6 +23,7 @@ namespace ECS_SFML
     struct SFMLWorldContext;
     class RenderSpriteComponent;
     class TransformComponent;
+    class TransformSystem;
     class ResourceManager;
 
     class RenderSystem : public ECS::ISystem
@@ -40,8 +41,9 @@ namespace ECS_SFML
 
         ResourceManager *resourceManager = nullptr;
         sf::RenderWindow* renderWindow = nullptr;
+        TransformSystem* transformSystem = nullptr;
 
-        TransformComponent* transformComponent = nullptr;
         RenderSpriteComponent* renderSpriteComponent = nullptr;
+        TransformComponent* transformComponent = nullptr;
     };
 } // ECS_SFML

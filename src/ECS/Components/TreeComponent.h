@@ -21,6 +21,8 @@ namespace ECS
         void AddChild(int _entityParent, int _entityChild);
         void RemoveChild(int _entityParent, int _entityChild);
 
+        void SetTreeDepth(int _entity, int _treeDepth);
+
         [[nodiscard]] const char* GetName() const override { return "TreeComponent"; }
         [[nodiscard]] bool IsUniquePerEntity() const override { return true; }
         [[nodiscard]] bool CanInterpolate() const override { return false; }
@@ -35,8 +37,11 @@ namespace ECS
     protected:
         // component index to parent Entity ID.
         std::vector<int> parentId{};
+        // how far down the tree are we. 0 = top-level parent. 1 = child, 2 = grandchild etc.
+        std::vector<int> treeDepth{};
         // Maps component index to child entity IDs
         std::map<int, std::vector<int>> childrenIds;
+
 
     };
 } // ECS

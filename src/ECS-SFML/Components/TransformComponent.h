@@ -8,6 +8,11 @@
 
 #include "Transform.h"
 
+namespace ECS_SFML
+{
+    class TransformSystem;
+}
+
 namespace ECS
 {
     class TreeComponent;
@@ -21,12 +26,10 @@ namespace ECS_SFML
     {
 
     public:
+        friend class TransformSystem;
 
         // Only one Transform per Entity
         [[nodiscard]] int GetDepth(int _componentIndex) const;
-
-        [[nodiscard]] Transform GetEntityWorldTransform(int _entityId, float _frameDelta);
-        [[nodiscard]] Transform GetWorldTransform(int _componentIndex, float _frameDelta);
 
         [[nodiscard]] sf::Vector2f GetRelativePosition(int _componentIndex, float _frameDelta) const;
         [[nodiscard]] sf::Vector2f GetRelativeScale(int _componentIndex, float _frameDelta) const;
@@ -55,9 +58,7 @@ namespace ECS_SFML
         void SetCapacityInternal(int _newCapacity) override;
         void ProcessPhysicsInternal(float _delta) override;
 
-        inline Transform CachePrevWorldTransform(int _componentIndex);
         [[nodiscard]] Transform CreateLocalTransform(int _componentIndex) const;
-        [[nodiscard]] Transform CreateLocalTransformPrev(int _componentIndex) const;
 
         void PopulateDepthEntityMap();
 
@@ -65,17 +66,8 @@ namespace ECS_SFML
         const ECS::TreeComponent* treeComponent = nullptr;
 
         std::vector<sf::Vector2f> position{};
-        std::vector<sf::Vector2f> positionPrev{};
         std::vector<sf::Vector2f> scale{};
-        std::vector<sf::Vector2f> scalePrev{};
         std::vector<float> rotation{};
-        std::vector<float> rotationPrev{};
-
-        std::vector<bool> hasCachedTransform{};
-        std::vector<Transform> cachedTransform{};
-        std::vector<bool> hasCachedTransformPrev{};
-        std::vector<Transform> cachedTransformPrev{};
-
 
         // draw order depth, lower = drawn last
         std::vector<int> depth{};

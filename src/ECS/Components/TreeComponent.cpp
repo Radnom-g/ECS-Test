@@ -64,6 +64,8 @@ namespace ECS
         }
 
         childList.push_back(_entityChild);
+
+        SetTreeDepth(_entityChild, treeDepth[parCompInd]);
     }
 
     void TreeComponent::RemoveChild(int _entityParent, int _entityChild)
@@ -75,6 +77,7 @@ namespace ECS
         if (parentId[childCompInd] == _entityParent)
         {
             parentId[childCompInd] = -1;
+            SetTreeDepth(childCompInd, 0);
         }
 
         if (childrenIds.find(EntityIdToComponentIndex(_entityParent)) == childrenIds.end())
@@ -100,9 +103,22 @@ namespace ECS
 
     }
 
+    void TreeComponent::SetTreeDepth(int _entity, int _treeDepth)
+    {
+        treeDepth[EntityIdToComponentIndex(_entity)] = _treeDepth;
+
+        std::vector<int>& childList = childrenIds[EntityIdToComponentIndex(_entity)];
+        for (auto iter = childList.begin(); iter != childList.end(); ++iter)
+        {
+            // Recursively set child depth.
+            SetTreeDepth(*iter, _treeDepth+1);
+        }
+    }
+
     bool TreeComponent::InitialiseInternal(WorldContext *context, int _initialCapacity, int _maxCapacity)
     {
         parentId.reserve(_initialCapacity);
+        treeDepth.reserve(_initialCapacity);
         childrenIds.clear();
         return true;
     }
@@ -110,6 +126,7 @@ namespace ECS
     void TreeComponent::AddComponentInternal(int _entityId, int _componentIndex)
     {
         parentId[_componentIndex] = -1;
+        treeDepth[_componentIndex] = 0;
         // No need to set childrenIds until a child is added.
     }
 
@@ -122,6 +139,8 @@ namespace ECS
         }
 
         parentId[_componentIndex] = -1;
+        treeDepth[_componentIndex] = 0;
+
         if (childrenIds.find(_componentIndex) != childrenIds.end())
         {
             childrenIds.erase(_componentIndex);
@@ -130,7 +149,8 @@ namespace ECS
 
     void TreeComponent::SetCapacityInternal(int _newCapacity)
     {
-        parentId.resize(_newCapacity, 0);
+        parentId.resize(_newCapacity, -1);
+        treeDepth.resize(_newCapacity, 0);
     }
 
 }

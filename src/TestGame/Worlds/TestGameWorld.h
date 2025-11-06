@@ -5,6 +5,7 @@
 #pragma once
 #include "../../ECS-SFML/Managers/ResourceManager.h"
 #include "../ECS-SFML/Systems/RenderSystem.h"
+#include "../ECS-SFML/Systems/TransformSystem.h"
 #include "Worlds/World.h"
 
 namespace ECS_Game
@@ -29,6 +30,7 @@ namespace ECS_Game
         ECS_SFML::SFMLWorldContext* worldContextSFML = nullptr;
         sf::RenderWindow* renderWindow = nullptr;
 
+        ECS_SFML::TransformSystem transformSystem;
         ECS_SFML::RenderSystem renderSystem;
         ECS_SFML::ResourceManager resourceManager;
     };

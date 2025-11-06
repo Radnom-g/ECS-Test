@@ -5,6 +5,8 @@
 #include "RenderSystem.h"
 
 #include <SFML/Graphics.hpp>
+
+#include "TransformSystem.h"
 #include "../ECS-SFML/Components/RenderSpriteComponent.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../Managers/ResourceManager.h"
@@ -25,12 +27,13 @@ namespace ECS_SFML
 
         renderWindow = _context->renderWindow;
         resourceManager = _context->resourceManager;
+        transformSystem = _context->transformSystem;
         transformComponent = _context->componentManager->GetComponent<TransformComponent>();
         renderSpriteComponent = _context->componentManager->GetComponent<RenderSpriteComponent>();
 
         assert(renderWindow != nullptr && "RenderSystem::Initialise _renderWindow is null.");
         assert(resourceManager != nullptr && "RenderSystem::Initialise resourceManager is null.");
-        assert(transformComponent != nullptr && "RenderSystem::Initialise transformComponent is null.");
+        assert(transformSystem != nullptr && "RenderSystem::Initialise transformSystem is null.");
         assert(renderSpriteComponent != nullptr && "RenderSystem::Initialise renderSpriteComponent is null.");
 
         isInitialised = true;
@@ -70,11 +73,14 @@ namespace ECS_SFML
 
                     if (currentSprite)
                     {
-                        Transform t = renderSpriteComponent->GetWorldTransform(spriteComp, _deltaTween);
-                        currentSprite->setPosition(t.getPosition());
-                        currentSprite->setScale(t.getScale());
-                        currentSprite->setOrigin(t.getOrigin());
-                        currentSprite->setRotation(t.getRotation());
+                        Transform tEnt = transformSystem->GetEntityWorldTransform(entity, _deltaTween);
+                        Transform tSpr = renderSpriteComponent->CreateLocalTransform(spriteComp, _deltaTween);
+                        tSpr = Transform::GetAppliedTransform(tEnt, tSpr);
+
+                        currentSprite->setPosition(tSpr.getPosition());
+                        currentSprite->setScale(tSpr.getScale());
+                        currentSprite->setOrigin(tSpr.getOrigin());
+                        currentSprite->setRotation(tSpr.getRotation());
                         renderWindow->draw(*currentSprite);
                     }
                 }

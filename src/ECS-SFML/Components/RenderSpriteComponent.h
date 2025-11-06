@@ -10,16 +10,6 @@
 
 #include "Transform.h"
 
-namespace ECS
-{
-    class TreeComponent;
-}
-
-namespace ECS_SFML
-{
-    class TransformComponent;
-}
-
 namespace ECS_SFML
 {
     // This is a component that has a reference to a Texture ID (loaded by ResourceManager).
@@ -29,9 +19,7 @@ namespace ECS_SFML
     public:
         ~RenderSpriteComponent() override = default;
 
-        // This will check up the tree.
-        // Not const, as TransformComponent will cache the position.
-        ECS_SFML::Transform GetWorldTransform(int _componentIndex, float _frameDelta);
+        [[nodiscard]] Transform CreateLocalTransform(int _componentIndex, float _frameDelta) const;
 
         [[nodiscard]] sf::Vector2f GetRelativePosition(int _componentIndex, float _frameDelta) const;
 
@@ -63,10 +51,6 @@ namespace ECS_SFML
         void ProcessPhysicsInternal(float _delta) override;
 
     protected:
-
-        // So that we can get our position relative to our transform (if any) or parent (if any).
-        const ECS::TreeComponent* treeComponent = nullptr;
-        TransformComponent* transformComponent = nullptr;
 
         // Component data:
         std::vector<sf::Vector2f> position{};

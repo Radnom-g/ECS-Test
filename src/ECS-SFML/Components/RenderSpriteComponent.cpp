@@ -11,20 +11,13 @@
 
 namespace ECS_SFML
 {
-    ECS_SFML::Transform RenderSpriteComponent::GetWorldTransform(int _componentIndex, float _frameDelta)
+    Transform RenderSpriteComponent::CreateLocalTransform(int _componentIndex, float _frameDelta) const
     {
-        Transform local_t;
-        local_t.setPosition(GetRelativePosition(_componentIndex, _frameDelta));
-        local_t.setScale(GetRelativeScale(_componentIndex, _frameDelta));
-        local_t.setRotation(sf::degrees(GetRelativeRotation(_componentIndex, _frameDelta)));
-
-        if (transformComponent->HasComponent(entityId[_componentIndex]))
-        {
-            Transform parent_t = transformComponent->GetWorldTransform(_componentIndex, _frameDelta);
-            local_t = Transform::GetAppliedTransform(parent_t, local_t);
-        }
-
-        return local_t;
+        Transform transform;
+        transform.setPosition(GetRelativePosition(_componentIndex, _frameDelta));
+        transform.setScale(GetRelativeScale(_componentIndex, _frameDelta));
+        transform.setRotation(sf::degrees(GetRelativeRotation(_componentIndex, _frameDelta)));
+        return transform;
     }
 
     sf::Vector2f RenderSpriteComponent::GetRelativePosition(int _componentIndex, float _frameDelta) const
@@ -72,7 +65,6 @@ namespace ECS_SFML
 
     bool RenderSpriteComponent::InitialiseInternal(ECS::WorldContext *context, int _initialCapacity, int _maxCapacity)
     {
-        transformComponent = context->componentManager->GetComponent<TransformComponent>();
         position.reserve(_initialCapacity);
         positionPrev.reserve(_initialCapacity);
         scale.reserve(_initialCapacity);

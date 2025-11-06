@@ -3,11 +3,36 @@ Creating an Entity-Component-System framework in C++ to learn more about the app
 
 
 
-Rendering:
-- Entities must have a 'Renderable' component. This has a Depth value which determines the rendering order.
-- A single Entity can only render at one depth. If you want it to render at multiple depths, split it into multiple Entities.
+Entity:
+- The EntityManager has a few big arrays of data which represent Entities.
+- Just the index, a bool 'Active', and a string name. 
+- Entities don't do anything and can be reused.
 
 
-- The RenderingSystem has a map of Depth (integer) to a list of Entities. 
-- It will attempt to render sprites of a single depth all at once, i.e. if there are thirty entities at depth 40 with a Sprite component of 'Tree' then it will render them all in one go. 
+Component:
+- A class that stores data as simple types in arrays. 
+- Each entry in the array is related to an Entity.
+- Components can be unique (one Transform max per entity) or multiple (i.e. multiple Sprites on one Entity)
+- Ideally, the data arrays would be set to the correct size (determined through playtesting) that it would not need resizing dynamically, but it does support resizing at runtime.
+- Ideally, just data - no processing.
 
+
+System:
+- Something that processes the data in Components.
+- RenderingSystem grabs the Transform and Sprite components to determine where to render Sprites, and in what order.
+
+
+World:
+- This is a 'scene' of the game, like a level, the menu, etc.
+- It creates the systems and components and is a link between them.
+- You could have multiple Worlds running at once. 
+
+
+I wanted to try and get a system working where the physics is on a fixed time step, but the rendering can occur more often and lerp between the previous physics position and the next.
+
+
+
+TODO: 
+- Add a VelocitySystem (MotionSystem?) and VelocityComponent. 
+- Add a CollisionComponent? 
+- Move 'prev' states out of RenderSpriteComponent and instead cache the final prev/next sprite transforms in the RenderSystem, so that Render tick can simply lerp

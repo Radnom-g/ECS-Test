@@ -57,6 +57,7 @@ namespace ECS
 
     	[[nodiscard]] bool IsInitialised() const { return isInitialised; }
 
+    	[[nodiscard]] int GetArraySize() const { return active.size(); }
 
     	/*
     	// PUBLIC PURE VIRTUAL FUNCTIONS:

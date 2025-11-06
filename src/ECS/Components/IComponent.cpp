@@ -192,8 +192,13 @@ namespace ECS
 
     int IComponent::GetComponentIndex(int _entityId) const
     {
-        auto iter = entityIdComponentIndex.find(_entityId);
-        return iter != entityIdComponentIndex.end() ? iter->second : -1;
+        if (IsUniquePerEntity())
+        {
+            auto iter = entityIdComponentIndex.find(_entityId);
+            return iter != entityIdComponentIndex.end() ? iter->second : -1;
+        }
+        auto iter = entityIdComponentIndexMap.find(_entityId);
+        return iter != entityIdComponentIndexMap.end() ? iter->second : -1;
     }
 
     bool IComponent::GetComponentIndices(int _entityId, std::vector<int> &_componentIndexList)
