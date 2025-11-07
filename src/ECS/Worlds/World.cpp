@@ -56,8 +56,6 @@ namespace ECS
 
     void World::Update(float _deltaSeconds)
     {
-        componentManager.UpdateComponents(_deltaSeconds);
-
         UpdateInternal(_deltaSeconds);
     }
 

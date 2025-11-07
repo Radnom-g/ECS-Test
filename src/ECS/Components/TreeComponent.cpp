@@ -9,15 +9,17 @@ namespace ECS
 
     bool TreeComponent::IsChildOf(int _entityParent, int _entityChild) const
     {
-        return (EntityIdToComponentIndex(_entityChild) == _entityParent);
+        return (parentId[GetComponentIndex(_entityChild)] == _entityParent);
     }
 
-    void TreeComponent::GetChildren(int _entityParent, std::vector<int> &_outChildren) const
+    bool TreeComponent::GetChildren(int _entityParent, std::vector<int> &_outChildren) const
     {
-        if (childrenIds.find(EntityIdToComponentIndex(_entityParent)) != childrenIds.end())
+        if (childrenIds.find(GetComponentIndex(_entityParent)) != childrenIds.end())
         {
-            _outChildren = (childrenIds.at(EntityIdToComponentIndex(_entityParent)));
+            _outChildren = (childrenIds.at(GetComponentIndex(_entityParent)));
+            return _outChildren.size() > 0;
         }
+        return false;
     }
 
     int TreeComponent::GetParent(int _entityChild) const
@@ -25,13 +27,13 @@ namespace ECS
         if (!HasComponent(_entityChild))
             return -1;
 
-        return (parentId[EntityIdToComponentIndex(_entityChild)]);
+        return (parentId[GetComponentIndex(_entityChild)]);
     }
 
     void TreeComponent::AddChild(int _entityParent, int _entityChild)
     {
-        const int parCompInd = EntityIdToComponentIndex(_entityParent);
-        const int childCompInd = EntityIdToComponentIndex(_entityChild);
+        const int parCompInd = GetComponentIndex(_entityParent);
+        const int childCompInd = GetComponentIndex(_entityChild);
 
         if (parentId[childCompInd] == _entityParent)
             return; // assume this is already set up.
@@ -45,17 +47,17 @@ namespace ECS
         // Set parent of child.
         parentId[childCompInd] = _entityParent;
 
-        if (childrenIds.find(EntityIdToComponentIndex(_entityParent)) == childrenIds.end())
+        if (childrenIds.find(GetComponentIndex(_entityParent)) == childrenIds.end())
         {
             // We don't have any Children in this Component.
             std::vector<int> newChildList = std::vector<int>();
             newChildList.push_back(_entityChild);
-            childrenIds.emplace(EntityIdToComponentIndex(_entityParent), newChildList);
+            childrenIds.emplace(GetComponentIndex(_entityParent), newChildList);
             return;
         }
 
         // We have Children - check that it doesn't already have this child.
-        std::vector<int>& childList = childrenIds[EntityIdToComponentIndex(_entityChild)];
+        std::vector<int>& childList = childrenIds[GetComponentIndex(_entityChild)];
         for (auto i : childList)
         {
             // See if we already have it.
@@ -70,8 +72,8 @@ namespace ECS
 
     void TreeComponent::RemoveChild(int _entityParent, int _entityChild)
     {
-        const int parCompInd = EntityIdToComponentIndex(_entityParent);
-        const int childCompInd = EntityIdToComponentIndex(_entityChild);
+        const int parCompInd = GetComponentIndex(_entityParent);
+        const int childCompInd = GetComponentIndex(_entityChild);
 
         // Clear parent of child.
         if (parentId[childCompInd] == _entityParent)
@@ -80,13 +82,13 @@ namespace ECS
             SetTreeDepth(childCompInd, 0);
         }
 
-        if (childrenIds.find(EntityIdToComponentIndex(_entityParent)) == childrenIds.end())
+        if (childrenIds.find(GetComponentIndex(_entityParent)) == childrenIds.end())
         {
             // We don't have any Children in this Component.
             return;
         }
 
-        std::vector<int>& childList = childrenIds[EntityIdToComponentIndex(_entityChild)];
+        std::vector<int>& childList = childrenIds[GetComponentIndex(_entityChild)];
         for (auto iter = childList.begin(); iter != childList.end(); ++iter)
         {
             // Find and remove it.
@@ -98,16 +100,16 @@ namespace ECS
         }
         if (childList.empty())
         {
-            childrenIds.erase(EntityIdToComponentIndex(_entityChild));
+            childrenIds.erase(GetComponentIndex(_entityChild));
         }
 
     }
 
     void TreeComponent::SetTreeDepth(int _entity, int _treeDepth)
     {
-        treeDepth[EntityIdToComponentIndex(_entity)] = _treeDepth;
+        treeDepth[GetComponentIndex(_entity)] = _treeDepth;
 
-        std::vector<int>& childList = childrenIds[EntityIdToComponentIndex(_entity)];
+        std::vector<int>& childList = childrenIds[GetComponentIndex(_entity)];
         for (auto iter = childList.begin(); iter != childList.end(); ++iter)
         {
             // Recursively set child depth.

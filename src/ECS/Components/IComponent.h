@@ -38,10 +38,6 @@ namespace ECS
     	void RemoveComponentsFromEntity(int _entityId);
     	void RemoveComponent(int _componentIndex);
 
-    	// Call once per physics frame.
-    	// Clears out dirty flags.
-    	void ProcessPhysics(float _delta);
-
         [[nodiscard]] bool HasComponent(int _entityId) const;
 
         void GetEntitiesWithComponent(std::vector<int>& _outEntityList);
@@ -51,13 +47,23 @@ namespace ECS
     	// Get component by index for direct access to data. However, if the component becomes inactive, it can be
     	// reused by another Entity, so don't hang on to the index!
     	// -1 means invalid.
-    	int GetComponentIndex(int _entityId) const;
+    	int GetComponentIndex(int _entityId) const
+    	{
+    		if (IsUniquePerEntity())
+    		{
+    			auto iter = entityIdComponentIndex.find(_entityId);
+    			return iter != entityIdComponentIndex.end() ? iter->second : -1;
+    		}
+    		auto iter = entityIdComponentIndexMap.find(_entityId);
+    		return iter != entityIdComponentIndexMap.end() ? iter->second : -1;
+    	}
+
     	// This will return a list of component indices belonging to this Entity.
     	bool GetComponentIndices(int _entityId, std::vector<int>& _componentIndexList);
 
     	[[nodiscard]] bool IsInitialised() const { return isInitialised; }
 
-    	[[nodiscard]] int GetArraySize() const { return active.size(); }
+    	[[nodiscard]] int GetArraySize() const { return entityId.size(); }
 
     	/*
     	// PUBLIC PURE VIRTUAL FUNCTIONS:
@@ -66,10 +72,6 @@ namespace ECS
         [[nodiscard]] virtual const char* GetName() const = 0;
     	// if a single Entity can have multiple of this Component.
         [[nodiscard]] virtual bool IsUniquePerEntity() const = 0;
-
-    	// if this Component can interpolate between physics frames.
-    	// This determines if it cares about 'dirty'.
-    	[[nodiscard]] virtual bool CanInterpolate() const = 0;
 
 
     protected:
@@ -80,8 +82,7 @@ namespace ECS
     	void RemoveComponentByIndex(int _componentIndex);
     	// erase all values at given index
     	void ClearComponentAtIndex(int _componentIndex);
-    	// returns the index of a component ID.
-    	inline int EntityIdToComponentIndex(int _entityId) const { return entityIdComponentIndex.at(_entityId); }
+
     	// returns the start->end of the range of components (by index) belonging to this entity.
     	inline std::pair<std::multimap<int, int>::iterator, std::multimap<int, int>::iterator> EntityIdToComponentRange(int _entityId) { auto thing = entityIdComponentIndexMap.equal_range(_entityId); return thing; }
 
@@ -101,10 +102,6 @@ namespace ECS
     	virtual void ClearComponentAtIndexInternal(int _componentIndex) = 0;
     	// for resizing the arrays (vectors)
     	virtual void SetCapacityInternal(int _newCapacity) = 0;
-    	// Called end of physics tick.
-    	// This is where Components with interpolation should set prev states to current.
-    	// If it has no interpolation, leave empty.
-    	virtual void ProcessPhysicsInternal(float _delta) = 0;
 
     	/*
 		// PROTECTED VIRTUAL FUNCTIONS
@@ -123,11 +120,6 @@ namespace ECS
 
         // The entity this Component belongs to.
         std::vector<int> entityId{};
-        // Whether this component is currently Active.
-        std::vector<bool> active{};
-
-    	// If this component is 'dirty' and can interpolate.
-    	std::vector<int> dirty{};
 
     private:
     	/*
@@ -148,9 +140,6 @@ namespace ECS
     	// MAX cap, we cannot make data for more components than this.
     	// This is to prevent crazy cases like infinite loops where we might allocate way too much memory.
     	int maxCapacity = -1;
-
-    	// A component's index will remain constant, but the ID will change
-    	// so that we can track when a component is destroyed.
 
     	// This is just to keep track of the last component index we activated,
     	// so we can quickly check the next one in order, rather than going from 0 each time.
