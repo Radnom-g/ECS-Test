@@ -73,16 +73,21 @@ namespace ECS_SFML
 
     int ResourceManager::LoadTexture(const std::string& _fileName)
     {
+        if (StringTextureLookup.contains(_fileName))
+        {
+            assert(false && "LoadTexture already loaded!");
+        }
+
         sf::Texture* texture = new sf::Texture();
 
         bool bLoaded = texture->loadFromFile(_fileName);
         if (bLoaded)
         {
             int newId = loadedTextures + 1;
-            std::pair<int, sf::Texture*> idPair(newId, texture);
-            auto success = IdTextureLookup.emplace(idPair);
+            loadedTextures++;
 
-            assert(success.second && "LoadTexture already loaded!");
+            std::pair<int, sf::Texture*> idPair(newId, texture);
+            IdTextureLookup.emplace(idPair);
 
             std::pair<std::string, sf::Texture*> strPair(_fileName, texture);
             StringTextureLookup.emplace(strPair);

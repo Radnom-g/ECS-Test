@@ -4,10 +4,13 @@
 
 #include "TransformSystem.h"
 
+#include <debugapi.h>
+
 #include "../Worlds/SFMLWorldContext.h"
 #include "Components/ComponentManager.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "Components/TreeComponent.h"
+#include "Entities/EntityManager.h"
 
 
 namespace ECS_SFML
@@ -22,6 +25,7 @@ namespace ECS_SFML
 
         transformComponent = _context->componentManager->GetComponent<TransformComponent>();
         treeComponent = _context->componentManager->GetComponent<ECS::TreeComponent>();
+        entityManager = _context->entityManager;
 
         isInitialised = true;
         return true;
@@ -117,11 +121,47 @@ namespace ECS_SFML
         }
     }
 
+    // Try and move an Entity - either moving the transform, or looking up the tree for the first transform above it.
+    void TransformSystem::MoveEntity(int _entityId, const sf::Vector2f &_movement)
+    {
+        int _tformId = transformComponent->GetComponentIndex(_entityId);
+
+        if (_tformId == -1)
+        {
+            // go up the tree
+            int _parId;
+            while ( ( _parId = treeComponent->GetParent(_entityId) ) != -1)
+            {
+                _tformId = transformComponent->GetComponentIndex(_parId);
+                // if we don't have a transform, keep going up the tree until we find one (or reach the top).
+                if (_tformId != -1)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (_tformId != -1)
+        {
+            MoveTransform(_tformId, _movement);
+        }
+    }
+
+    void TransformSystem::RotateEntity(int _entityId, float _rotation)
+    {
+        RotateTransform(transformComponent->GetComponentIndex(_entityId), _rotation);
+    }
+
+    void TransformSystem::ScaleEntity(int _entityId, const sf::Vector2f &_scale)
+    {
+        ScaleTransform(transformComponent->GetComponentIndex(_entityId), _scale);
+    }
+
     Transform TransformSystem::GetParentTransform(int _transformCompIndex)
     {
         Transform outVal = Transform::Identity();
         int entity = transformComponent->entityId[_transformCompIndex];
-        while (treeComponent->GetParent(entity) != -1)
+        while ( (entity = treeComponent->GetParent(entity)) != -1)
         {
             int transformInd = transformComponent->GetComponentIndex(entity);
             // if we don't have a transform, keep going up the tree until we find one (or reach the top).
@@ -149,24 +189,24 @@ namespace ECS_SFML
     // Note: this goes off Entity ID, not transform index!
     void TransformSystem::CalculateCachedTransformOfChildren(int _entityId, const Transform& _parentTransform)
     {
-        Transform localTransform = _parentTransform;
-
-        // If this component has a Transform, update the cached transform.
-        int transformInd = transformComponent->GetComponentIndex(_entityId);
-        if (transformInd != -1)
-        {
-            localTransform = transformComponent->CreateLocalTransform(transformInd);
-            localTransform = Transform::GetAppliedTransform(_parentTransform, localTransform);
-            SetTransformCache(transformInd, localTransform);
-        }
-
-        // Now check for children.
+        // check for children.
         std::vector<int> _outChildren;
         if (treeComponent->GetChildren(_entityId, _outChildren))
         {
+            Transform newChildTransform = _parentTransform;
+
             for ( int childEntity : _outChildren)
             {
-                CalculateCachedTransformOfChildren(childEntity, localTransform);
+                // If this component has a Transform, update the cached transform.
+                int transformInd = transformComponent->GetComponentIndex(childEntity);
+                if (transformInd != -1)
+                {
+                    newChildTransform = transformComponent->CreateLocalTransform(transformInd);
+                    newChildTransform = Transform::GetAppliedTransform(_parentTransform, newChildTransform);
+                    SetTransformCache(transformInd, newChildTransform);
+                }
+
+                CalculateCachedTransformOfChildren(childEntity, newChildTransform);
             }
         }
     }
@@ -175,13 +215,9 @@ namespace ECS_SFML
     {
         cachedTransformPrev.assign(cachedTransform.begin(), cachedTransform.end());
 
-        int prevSize = cachedTransform.size();
-        int newSize = transformComponent->GetArraySize();
-        if (newSize > prevSize)
+        if ( transformComponent->GetArraySize() > cachedTransform.size())
         {
-            cachedTransform.resize(newSize);
-            cachedTransformPrev.resize(newSize);
-            transformNeedsCache.resize(newSize, true);
+            ResizeCache();
         }
 
         // This is used so we don't calculate transforms multiple times
@@ -201,6 +237,7 @@ namespace ECS_SFML
                 if (entity == -1)
                 {
                     transformNeedsCache[tCompInd] = false;
+                    transformPrevCacheSet[tCompInd] = false;
                     continue;
                 }
                 CalculateCachedTransformOfChildren(entity, identity);
@@ -210,19 +247,38 @@ namespace ECS_SFML
 
     void TransformSystem::SetTransformCache(int _transformIndex, const Transform &_worldTransform)
     {
+        if ( transformComponent->GetArraySize() > cachedTransform.size())
+        {
+            ResizeCache();
+        }
+
         cachedTransform[_transformIndex] = _worldTransform;
+
+        if (!transformPrevCacheSet[_transformIndex])
+        {
+            cachedTransformPrev[_transformIndex] = _worldTransform;
+            transformPrevCacheSet[_transformIndex] = true;
+        }
+
         transformNeedsCache[_transformIndex] = false;
         transformComponent->translationDirty[_transformIndex] = false;
 
-        if (_transformIndex > cachedTransformSize)
-        {
-            cachedTransformPrev[_transformIndex] = cachedTransform[_transformIndex];
-        }
-
         // DEBUG: remove!
-        // std::stringstream strDebug;
-        // strDebug << "Entity (" << transformComponent->entityId[_transformIndex] << ") transform (" << _transformIndex << ")";
-        // strDebug << Transform::ToString(cachedTransform[_transformIndex]);
-        // OutputDebugString(strDebug.str().c_str());
+        std::stringstream strDebug;
+        strDebug << "Entity #" << transformComponent->entityId[_transformIndex] << " (" << entityManager->GetName(transformComponent->entityId[_transformIndex]) << ")";
+        strDebug << " transform #" << _transformIndex << " ";
+        strDebug << Transform::ToString(cachedTransform[_transformIndex]);
+
+        OutputDebugString(strDebug.str().c_str());
+    }
+
+    void TransformSystem::ResizeCache()
+    {
+        int newSize = transformComponent->GetArraySize();
+        cachedTransformSize = newSize;
+        cachedTransform.resize(newSize);
+        cachedTransformPrev.resize(newSize);
+        transformNeedsCache.resize(newSize, true);
+        transformPrevCacheSet.resize(newSize, false);
     }
 } // ECS_SFML

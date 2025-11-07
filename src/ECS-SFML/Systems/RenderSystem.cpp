@@ -114,11 +114,18 @@ namespace ECS_SFML
                         {
                             Transform tSpr = Transform::Lerp(cachedSpriteTransformPrev[spriteComp], cachedSpriteTransform[spriteComp], _deltaTween);
 
-                            currentSprite->setPosition(tSpr.getPosition());
-                            currentSprite->setScale(tSpr.getScale());
-                            currentSprite->setOrigin(tSpr.getOrigin());
-                            currentSprite->setRotation(tSpr.getRotation());
-                            renderWindow->draw(*currentSprite);
+                            // temp, not lerping
+                            //Transform tSpr = cachedSpriteTransform[spriteComp];
+                            // currentSprite->setPosition(tSpr.getPosition());
+                            // currentSprite->setScale(tSpr.getScale());
+                            // currentSprite->setOrigin(tSpr.getOrigin());
+                            // currentSprite->setRotation(tSpr.getRotation());
+
+                            // TODO: Don't do this every time!
+                            tSpr.setOrigin(sf::Vector2f(static_cast<float>(currentSprite->getTexture().getSize().x) * 0.5f, static_cast<float>( currentSprite->getTexture().getSize().y) * 0.5f ));
+
+                            sf::RenderStates newStates(tSpr.getTransform());
+                            renderWindow->draw(*currentSprite, newStates);
                         }
                     }
                 }

@@ -7,9 +7,9 @@
 #include "SFMLWorldContext.h"
 #include "../../ECS-SFML/Systems/RenderSystem.h"
 #include "../../ECS-SFML/Systems/TransformSystem.h"
-#include "Components/ComponentManager.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../ECS-SFML/Components/SpriteComponent.h"
+#include "../ECS-SFML/Components/VelocityComponent.h"
 
 namespace ECS_SFML
 {
@@ -27,36 +27,18 @@ namespace ECS_SFML
 
     void SFMLWorld::InitialiseInternal()
     {
+        World::InitialiseInternal();
+
         assert(worldContextSFML && "World Context is not SFML context");
 
         worldContextSFML->transformSystem = &transformSystem;
         worldContextSFML->renderSystem = &renderSystem;
+        worldContextSFML->movementSystem = &movementSystem;
 
         transformSystem.Initialise(worldContextSFML);
         renderSystem.Initialise(worldContextSFML);
+        movementSystem.Initialise(worldContextSFML);
 
-        int spriteIndex = -1;
-        resourceManager.GetOrLoadTexture("resources/qmark_block.png", spriteIndex);
-
-        ECS_SFML::TransformComponent* transformComponent = componentManager.GetComponent<ECS_SFML::TransformComponent>();
-        ECS_SFML::SpriteComponent* spriteComponent = componentManager.GetComponent<ECS_SFML::SpriteComponent>();
-
-        for (int ii = 0; ii < 10; ii++)
-        {
-            int newEnt = entityManager.ActivateEntity("Block");
-
-            int newT = transformComponent->AddComponent(newEnt);
-            int newS = spriteComponent->AddComponent(newEnt);
-
-            spriteComponent->SetTextureIndex(newS, spriteIndex);
-            transformComponent->SetDepth(newT, std::rand() % 3);
-
-            sf::Vector2f randPos( (std::rand() % 10) * 16, (std::rand() % 10) * 16 );
-
-            transformComponent->SetPosition(newT, randPos);
-        }
-
-        World::InitialiseInternal();
     }
 
     void SFMLWorld::CreateWorldContext()
@@ -82,9 +64,11 @@ namespace ECS_SFML
 
         ECS::ComponentSettings transformSettings = ECS_SFML::TransformComponent::CreateSettings<ECS_SFML::TransformComponent>(1000, 100000);
         ECS::ComponentSettings spriteSettings = ECS_SFML::SpriteComponent::CreateSettings<ECS_SFML::SpriteComponent>(1000, 100000);
+        ECS::ComponentSettings velocitySettings = ECS_SFML::VelocityComponent::CreateSettings<ECS_SFML::VelocityComponent>(1000, 100000);
 
         worldSettings->ComponentSettings.push_back(transformSettings);
         worldSettings->ComponentSettings.push_back(spriteSettings);
+        worldSettings->ComponentSettings.push_back(velocitySettings);
     }
 
     void SFMLWorld::InitialiseComponents()
@@ -101,6 +85,7 @@ namespace ECS_SFML
     {
         World::UpdateInternal(_deltaSeconds);
         transformSystem.Process(_deltaSeconds);
+        movementSystem.Process(_deltaSeconds);
         renderSystem.Process(_deltaSeconds);
     }
 

@@ -35,11 +35,28 @@ namespace ECS_SFML
             return ret;
         }
 
+        static float ShortAngleDist(float _from, float _to)
+        {
+            float delta = std::fmod(_to - _from, sf::priv::tau);
+            return std::fmod(2.0f * delta, sf::priv::tau) - delta;
+        }
+
+        static float AngleLerp(float _a, float _b, float _t)
+        {
+            return _a + ShortAngleDist(_a, _b) * _t;
+        }
+
         [[nodiscard]] inline static Transform Lerp(const Transform& _a, const Transform& _b, float t)
         {
             Transform result;
+            result.setOrigin(_a.getOrigin() + (_b.getOrigin() - _a.getOrigin()) * t);
             result.setPosition(_a.getPosition() + (_b.getPosition() - _a.getPosition()) * t);
-            result.setRotation(_a.getRotation() + (_b.getRotation() - _a.getRotation()) * t);
+
+            // Bad lerp!
+            //result.setRotation(_a.getRotation() + (_b.getRotation() - _a.getRotation()) * t);
+
+            // Good lerp!
+            result.setRotation(sf::radians(AngleLerp(_a.getRotation().asRadians(), _b.getRotation().asRadians(), t )));
             result.setScale(_a.getScale() + (_b.getScale() - _a.getScale()) * t);
             return result;
         }
@@ -47,6 +64,7 @@ namespace ECS_SFML
         inline static std::string ToString(const Transform& _transform)
         {
             std::stringstream strstr;
+            strstr << "Origin<" << _transform.getOrigin().x << "," << _transform.getOrigin().y << ">";
             strstr << "Pos<" << _transform.getPosition().x << "," << _transform.getPosition().y << ">";
             strstr << ", Scale<" << _transform.getScale().x << "," << _transform.getScale().y << ">";
             strstr << ", Rot<" << _transform.getRotation().asDegrees() << ">";
@@ -56,6 +74,7 @@ namespace ECS_SFML
         [[nodiscard]] inline static Transform GetAppliedTransform(const Transform& _parent, const Transform& _child)
         {
             sf::Transform world = _parent.getTransform() * _child.getTransform();
+            //world.combine(_parent.getTransform(), _child.getTransform());
 
             Transform ret;
             ret.setOrigin(_child.getOrigin());
@@ -81,7 +100,7 @@ namespace ECS_SFML
             return (ret);
         }
 
-        // Why the hell doesn't sfml have easy access to this stuff?
+        // Why doesn't sfml have easy access to this stuff?
         /*
          sf::Transform matrix is defined as a 3x3 matrix in a 4x4 structure as:
         : m_matrix{a00, a10, 0.f, a20,
@@ -109,7 +128,7 @@ namespace ECS_SFML
         inline static sf::Angle GetRotation( const sf::Transform& _transform )
         {
             const float* m = _transform.getMatrix();
-            return sf::radians( std::atan2(m[1], m[0]) * sf::priv::pi / sf::priv::pi );
+            return sf::radians( std::atan2(m[4], m[0])  );
         }
 
         inline static sf::Vector2f GetScale( const sf::Transform& _transform )

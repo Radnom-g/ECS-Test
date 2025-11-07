@@ -20,6 +20,7 @@ namespace ECS_SFML
 {
     struct SFMLWorldContext;
     class TransformComponent;
+    class VelocityComponent;
     class TransformSystem;
 
     class MovementSystem : public ECS::ISystem
@@ -40,6 +41,7 @@ namespace ECS_SFML
         TransformSystem* transformSystem = nullptr;
 
         TransformComponent* transformComponent = nullptr;
+        VelocityComponent* velocityComponent = nullptr;
 
     };
 } // ECS_SFML

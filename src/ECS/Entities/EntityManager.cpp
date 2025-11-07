@@ -107,6 +107,18 @@ namespace ECS
 		return false;
 	}
 
+	const std::string & EntityManager::GetName(int _id)
+	{
+		auto mapIter = entityIndexMap.find(_id);
+		if (mapIter != entityIndexMap.end())
+		{
+			int index = (*mapIter).second;
+			return (entityNames[index]);
+		}
+		// It has expired.
+		return "Invalid";
+	}
+
 	int EntityManager::GetNextInactiveEntityIndex()
 	{
 		int capacity = (int)activeEntities.size();

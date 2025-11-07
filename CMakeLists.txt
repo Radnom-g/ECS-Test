@@ -43,7 +43,6 @@ add_executable(ECSTest src/main.cpp
         src/ECS-SFML/Components/TransformComponent.cpp
         src/ECS/Components/TreeComponent.cpp
         src/ECS-SFML/Components/SpriteComponent.cpp
-        src/ECS-SFML/Components/Transform.cpp
         src/ECS-SFML/Components/Transform.h
         src/ECS-SFML/Worlds/SFMLWorldContext.h
         src/ECS/Worlds/WorldSettings.h

@@ -27,6 +27,7 @@ namespace ECS_SFML
         position.reserve(_initialCapacity);
         scale.reserve(_initialCapacity);
         rotation.reserve(_initialCapacity);
+        origin.reserve(_initialCapacity);
         translationDirty.reserve(_initialCapacity);
 
         return true;
@@ -39,6 +40,7 @@ namespace ECS_SFML
         position[_componentIndex] = sf::Vector2f(0, 0);
         scale[_componentIndex] = sf::Vector2f(1, 1);
         rotation[_componentIndex] = 0;
+        origin[_componentIndex] = sf::Vector2f(0.5, 0.5);
         translationDirty[_componentIndex] = true;
     }
 
@@ -49,6 +51,7 @@ namespace ECS_SFML
         position[_componentIndex] = sf::Vector2f(0, 0);
         scale[_componentIndex] = sf::Vector2f(1, 1);
         rotation[_componentIndex] = 0;
+        origin[_componentIndex] = sf::Vector2f(0, 0);
         translationDirty[_componentIndex] = true;
 
     }
@@ -60,6 +63,7 @@ namespace ECS_SFML
         position.resize(_newCapacity, sf::Vector2f(0, 0));
         scale.resize(_newCapacity, sf::Vector2f(1, 1));
         rotation.resize(_newCapacity, 0.0f);
+        origin.resize(_newCapacity, sf::Vector2f(0, 0));
         translationDirty.resize(_newCapacity, true);
     }
 

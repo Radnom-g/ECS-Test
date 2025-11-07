@@ -34,7 +34,6 @@ I wanted to try and get a system working where the physics is on a fixed time st
 
 
 TODO: 
-- Add a VelocitySystem (MotionSystem?) and VelocityComponent. 
 - Add a CollisionComponent
 	- a way to say 'use SpriteComponent for collision'? 
 - TreeSystem that maintains tree structure and adds/removes children, move this logic out of TreeComponent

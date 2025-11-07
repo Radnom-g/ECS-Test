@@ -14,6 +14,10 @@ namespace ECS_Game
         // This is where we'd put game-specific systems in place.
         // Like score systems or whatever.
 
+        void InitialiseInternal() override;
+        void UpdateInternal(float _deltaSeconds) override;
+
     protected:
+        std::vector<int> entitiesToRotate;
     };
 } // ECS_Game

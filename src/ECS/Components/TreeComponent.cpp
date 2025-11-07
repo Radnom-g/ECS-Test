@@ -32,8 +32,17 @@ namespace ECS
 
     void TreeComponent::AddChild(int _entityParent, int _entityChild)
     {
-        const int parCompInd = GetComponentIndex(_entityParent);
-        const int childCompInd = GetComponentIndex(_entityChild);
+        int parCompInd = GetComponentIndex(_entityParent);
+        if ( parCompInd == -1)
+        {
+            parCompInd = AddComponent(_entityParent);
+        }
+
+        int childCompInd = GetComponentIndex(_entityChild);
+        if (childCompInd == -1)
+        {
+            childCompInd = AddComponent(_entityChild);
+        }
 
         if (parentId[childCompInd] == _entityParent)
             return; // assume this is already set up.

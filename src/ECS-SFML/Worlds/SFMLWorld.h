@@ -7,6 +7,7 @@
 #include "../ECS-SFML/Systems/RenderSystem.h"
 #include "../ECS-SFML/Systems/TransformSystem.h"
 #include "../../ECS-SFML/Managers/ResourceManager.h"
+#include "../Systems/MovementSystem.h"
 
 namespace sf
 {
@@ -38,6 +39,7 @@ namespace ECS_SFML
 
         ECS_SFML::TransformSystem transformSystem;
         ECS_SFML::RenderSystem renderSystem;
+        ECS_SFML::MovementSystem movementSystem;
         ECS_SFML::ResourceManager resourceManager;
     };
 } // ECS_SFML

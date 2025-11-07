@@ -33,6 +33,7 @@ namespace ECS
         void DeactivateEntity(int _id);
 
         inline bool IsActive(int _id);
+        const std::string& GetName(int _id);
 
         int GetMaxCapacity() const { return maxCapacity; }
 
