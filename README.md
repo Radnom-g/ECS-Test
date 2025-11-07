@@ -15,6 +15,7 @@ Component:
 - Components can be unique (one Transform max per entity) or multiple (i.e. multiple Sprites on one Entity)
 - Ideally, the data arrays would be set to the correct size (determined through playtesting) that it would not need resizing dynamically, but it does support resizing at runtime.
 - Ideally, just data - no processing.
+- 'Tag' Components are just derived from IComponent but with no extra data. 
 
 
 System:
@@ -34,5 +35,17 @@ I wanted to try and get a system working where the physics is on a fixed time st
 
 TODO: 
 - Add a VelocitySystem (MotionSystem?) and VelocityComponent. 
-- Add a CollisionComponent? 
-- Move 'prev' states out of RenderSpriteComponent and instead cache the final prev/next sprite transforms in the RenderSystem, so that Render tick can simply lerp
+- Add a CollisionComponent
+	- a way to say 'use SpriteComponent for collision'? 
+- TreeSystem that maintains tree structure and adds/removes children, move this logic out of TreeComponent
+- high level ISystem enum state so that systems know if they are early-tick/tick/late-tick/render state and bool for if they have ticked this frame?
+
+
+FUTURE TODO:
+- Have World create all the Components that make sense (ECS World creates Tree/Timer/etc, ECS_SFML World creates Transform, Velocity, Render components/systems)
+- Have a System registry
+- Systems can say they want to process before/after other Systems, to ensure TransformSystem runs before RenderSystem for example 
+
+- JSON system for reading config (entity capacity values) 
+- JSON for serialisation 
+

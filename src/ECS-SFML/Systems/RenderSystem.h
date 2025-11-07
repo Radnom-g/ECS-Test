@@ -3,10 +3,13 @@
 //
 
 #pragma once
+#include <map>
+#include <vector>
+
 #include "Systems/ISystem.h"
 
 #include "SFML/System/Vector2.hpp"
-#include "Worlds/WorldContext.h"
+#include "../ECS-SFML/Components/Transform.h"
 
 namespace sf
 {
@@ -21,7 +24,7 @@ namespace ECS
 namespace ECS_SFML
 {
     struct SFMLWorldContext;
-    class RenderSpriteComponent;
+    class SpriteComponent;
     class TransformComponent;
     class TransformSystem;
     class ResourceManager;
@@ -32,18 +35,43 @@ namespace ECS_SFML
         bool Initialise(SFMLWorldContext* _context);
 
     protected:
-        void ProcessInternal(float _deltaTick) override {}
+        void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override;
 
         inline const char* GetSystemName() override { return "RenderSystem"; }
-        bool GetDoesProcessTick() override { return false; }
+        bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return true; }
+
+        // Ask for a list of active Depths, in order.
+        const std::vector<int>& GetDepths();
+        // Ask for a list of Entities at a specific Depth.
+        // provides iterators.
+        std::pair<std::multimap<int, int>::const_iterator, std::multimap<int, int>::const_iterator> GetEntitiesAtDepth(int _depth);
+
+        void PopulateDepthEntityMap();
+
+
+        Transform CalculateCachedSpriteTransform(int _spriteCompIndex);
+
 
         ResourceManager *resourceManager = nullptr;
         sf::RenderWindow* renderWindow = nullptr;
         TransformSystem* transformSystem = nullptr;
 
-        RenderSpriteComponent* renderSpriteComponent = nullptr;
+        SpriteComponent* spriteComponent = nullptr;
         TransformComponent* transformComponent = nullptr;
+
+        std::vector<Transform> cachedSpriteTransform{};
+        std::vector<Transform> cachedSpriteTransformPrev{};
+        std::vector<bool> hasCachedSpriteTransform{};
+
+        // caching and processing of the Transform's 'depth' value
+        bool depthListDirty = true;
+        std::vector<int> depthList{};
+        bool depthMapDirty = true;
+        std::multimap<int, int> depthEntityMap;
+
+        // This is so that we can set the 'prev' as well if it's brand new
+        int cachedTransformSize = 0;
     };
 } // ECS_SFML

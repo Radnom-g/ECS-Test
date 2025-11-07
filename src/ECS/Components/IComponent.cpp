@@ -21,8 +21,6 @@ namespace ECS
 
         maxCapacity = _maxCapacity;
         entityId.reserve(_initialCapacity);
-        active.reserve(_initialCapacity);
-        dirty.reserve(_initialCapacity);
 
         return InitialiseInternal(context, _initialCapacity, _maxCapacity);
     }
@@ -41,7 +39,6 @@ namespace ECS
         if (componentIndex != -1)
         {
             entityId[componentIndex] = _entityId;
-            active[componentIndex] = true;
 
             if (IsUniquePerEntity())
             {
@@ -72,7 +69,7 @@ namespace ECS
 
         if (IsUniquePerEntity())
         {
-            int compIndex = EntityIdToComponentIndex(_entityId);
+            int compIndex = GetComponentIndex(_entityId);
             ClearComponentAtIndex(compIndex);
             entityIdComponentIndex.erase(_entityId);
         }
@@ -121,13 +118,6 @@ namespace ECS
         }
 
         ClearComponentAtIndex(_componentIndex);
-    }
-
-    void IComponent::ProcessPhysics(float _delta)
-    {
-        // Clear dirty flag.
-        dirty.assign(dirty.size(), false);
-        ProcessPhysicsInternal(_delta);
     }
 
     bool IComponent::HasComponent(int _entityId) const
@@ -190,17 +180,6 @@ namespace ECS
         }
     }
 
-    int IComponent::GetComponentIndex(int _entityId) const
-    {
-        if (IsUniquePerEntity())
-        {
-            auto iter = entityIdComponentIndex.find(_entityId);
-            return iter != entityIdComponentIndex.end() ? iter->second : -1;
-        }
-        auto iter = entityIdComponentIndexMap.find(_entityId);
-        return iter != entityIdComponentIndexMap.end() ? iter->second : -1;
-    }
-
     bool IComponent::GetComponentIndices(int _entityId, std::vector<int> &_componentIndexList)
     {
         _componentIndexList.clear();
@@ -230,27 +209,23 @@ namespace ECS
         ClearComponentAtIndexInternal(_componentIndex);
 
         entityId[_componentIndex] = -1;
-        active[_componentIndex] = false;
-        dirty[_componentIndex] = false;
     }
 
     void IComponent::SetCapacity(int _newCapacity)
     {
         entityId.resize(_newCapacity, -1);
-        active.resize(_newCapacity, false);
-        dirty.resize(_newCapacity, false);
 
         SetCapacityInternal(_newCapacity);
     }
 
     int IComponent::GetNextInactiveComponent()
     {
-        int capacity = (int)active.size();
+        int capacity = (int)entityId.size();
         for (int i = 0; i < capacity; ++i)
         {
             int index = (nextIndex + i) % capacity;
 
-            if (!active[index])
+            if (entityId[index] == -1)
             {
                 return index;
             }

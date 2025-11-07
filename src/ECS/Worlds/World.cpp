@@ -56,8 +56,6 @@ namespace ECS
 
     void World::Update(float _deltaSeconds)
     {
-        componentManager.UpdateComponents(_deltaSeconds);
-
         UpdateInternal(_deltaSeconds);
     }
 
@@ -82,6 +80,13 @@ namespace ECS
 
     void World::CreateAndRegisterComponents()
     {
+        // TODO: use the WorldSettings to initialise capacity values
+        ECS::ComponentSettings treeSettings = ECS::TreeComponent::CreateSettings<ECS::TreeComponent>(1000, 100000);
+        worldSettings->ComponentSettings.push_back(treeSettings);
+
+        // Derived Worlds can add more Components here
+        CreateAndRegisterComponentsInternal();
+
         for (ComponentSettings& settings : worldSettings->ComponentSettings)
         {
             IComponent* newComponent = settings.Constructor();

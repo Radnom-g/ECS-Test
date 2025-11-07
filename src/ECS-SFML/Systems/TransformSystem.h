@@ -27,8 +27,23 @@ namespace ECS_SFML
         [[nodiscard]] Transform GetEntityWorldTransform(int _entityId, float _frameDelta);
         [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex, float _frameDelta);
 
+        // to be called in process tick, these setters will go DOWN the tree and update cached transforms.
+        // Intended for systems that process after TransformSystem (most of them).
+
+        // This one is fairly expensive as we have to work backwards to calculate the local.
+        // Better to use Move/Rotate/ScaleEntity if possible.
+        void SetWorldTransform(int _transformInd, const Transform& _newTransform);
+        void MoveTransform(int _transformInd, const sf::Vector2f& _movement);
+        void RotateTransform(int _transformInd, float _rotation);
+        void ScaleTransform(int _transformInd, const sf::Vector2f& _scale);
+
     protected:
-        Transform CalculateCachedTransform(int _transformCompIndex);
+        // Get the transform's parent transform by going up the Tree to find parent Transforms.
+        // This will also cache any uncached transforms on its way.
+        Transform GetParentTransform(int _transformCompIndex);
+
+        // from an entity, affect the cached transforms of child entities.
+        void CalculateCachedTransformOfChildren(int _entityId, const Transform& _parentTransform);
 
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override {}
@@ -37,6 +52,8 @@ namespace ECS_SFML
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return false; }
 
+        void SetTransformCache(int _transformIndex, const Transform& _worldTransform);
+
         TransformComponent* transformComponent = nullptr;
         ECS::TreeComponent* treeComponent = nullptr;
 
@@ -44,7 +61,7 @@ namespace ECS_SFML
         std::vector<Transform> cachedTransformPrev{};
 
         // this is only used in ProcessTick but might as well keep it in memory
-        std::vector<bool> transformSetThisFrame;
+        std::vector<bool> transformNeedsCache;
 
         // This is so that we can set the 'prev' as well if it's brand new
         int cachedTransformSize = 0;

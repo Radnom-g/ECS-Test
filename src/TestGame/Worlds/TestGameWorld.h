@@ -3,35 +3,17 @@
 //
 
 #pragma once
-#include "../../ECS-SFML/Managers/ResourceManager.h"
-#include "../ECS-SFML/Systems/RenderSystem.h"
-#include "../ECS-SFML/Systems/TransformSystem.h"
-#include "Worlds/World.h"
+#include "../../ECS-SFML/Worlds/SFMLWorld.h"
 
 namespace ECS_Game
 {
-    class TestGameWorld : public ECS::World
+    class TestGameWorld : public ECS_SFML::SFMLWorld
     {
     public:
-        bool Initialise(ECS::WorldSettings* _worldSettings, sf::RenderWindow* _renderWindow);
-    protected:
-        bool Initialise(ECS::WorldSettings *_worldSettings) override;
-    public:
-        void InitialiseInternal() override;
-        void ReinitialiseInternal() override;
-
-        void UpdateInternal(float _deltaSeconds) override;
-        void RenderInternal(float _deltaTween) override;
-
-        void CreateWorldContext() override;
-
+        // Nothing yet!
+        // This is where we'd put game-specific systems in place.
+        // Like score systems or whatever.
 
     protected:
-        ECS_SFML::SFMLWorldContext* worldContextSFML = nullptr;
-        sf::RenderWindow* renderWindow = nullptr;
-
-        ECS_SFML::TransformSystem transformSystem;
-        ECS_SFML::RenderSystem renderSystem;
-        ECS_SFML::ResourceManager resourceManager;
     };
 } // ECS_Game

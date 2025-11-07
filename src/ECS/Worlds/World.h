@@ -31,16 +31,19 @@ namespace ECS
 
         inline WorldContext* GetWorldContext() const;
 
+    private:
+        // Derived classes may want to define their own components and register them with componentManager in here.
+        void CreateAndRegisterComponents();
+
     protected:
         // Derived classes may need to create a derived WorldContext struct in here.
         virtual void CreateWorldContext();
 
-        // Derived classes may want to define their own components and register them with componentManager in here.
-        virtual void CreateAndRegisterComponents();
-
         // After registering all Components, they are initialised.
         virtual void InitialiseComponents();
 
+        // Derived classes may want to define their own components and register them with componentManager in here.
+        virtual void CreateAndRegisterComponentsInternal() {}
         virtual void InitialiseInternal() {}
         virtual void ReinitialiseInternal() {}
         virtual void UpdateInternal(float _deltaSeconds) {}

@@ -17,8 +17,6 @@ namespace ECS
         void InitialiseComponents(WorldContext* _context);
         void RegisterComponent(ComponentSettings* _componentSettings, IComponent* _component);
 
-        void UpdateComponents(float _deltaTime);
-
         template <typename T>
         T* GetComponent()
         {

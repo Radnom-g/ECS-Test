@@ -23,7 +23,7 @@ add_executable(ECSTest src/main.cpp
         src/ECS/Systems/ISystem.h
         src/ECS/Worlds/World.cpp
         src/ECS/Worlds/World.h
-        src/ECS-SFML/Components/RenderSpriteComponent.h
+        src/ECS-SFML/Components/SpriteComponent.h
         src/ECS-SFML/Components/TransformComponent.h
         src/ECS-SFML/Managers/ResourceManager.cpp
         src/ECS-SFML/Managers/ResourceManager.h
@@ -42,12 +42,24 @@ add_executable(ECSTest src/main.cpp
         src/ECS/Worlds/WorldContext.h
         src/ECS-SFML/Components/TransformComponent.cpp
         src/ECS/Components/TreeComponent.cpp
-        src/ECS-SFML/Components/RenderSpriteComponent.cpp
+        src/ECS-SFML/Components/SpriteComponent.cpp
         src/ECS-SFML/Components/Transform.cpp
         src/ECS-SFML/Components/Transform.h
         src/ECS-SFML/Worlds/SFMLWorldContext.h
         src/ECS/Worlds/WorldSettings.h
         src/ECS/Components/ComponentSettings.h
+        src/ECS-SFML/Components/VelocityComponent.cpp
+        src/ECS-SFML/Components/VelocityComponent.h
+        src/ECS-SFML/Components/TimerComponent.cpp
+        src/ECS-SFML/Components/TimerComponent.h
+        src/ECS-SFML/Components/ScreenWrapComponent.cpp
+        src/ECS-SFML/Components/ScreenWrapComponent.h
+        src/ECS-SFML/Systems/TimerSystem.cpp
+        src/ECS-SFML/Systems/TimerSystem.h
+        src/ECS-SFML/Systems/MovementSystem.cpp
+        src/ECS-SFML/Systems/MovementSystem.h
+        src/ECS-SFML/Worlds/SFMLWorld.cpp
+        src/ECS-SFML/Worlds/SFMLWorld.h
 )
 target_include_directories(ECSTest PRIVATE src/ECS)
 target_compile_features(ECSTest PRIVATE cxx_std_17)

@@ -61,12 +61,4 @@ namespace ECS
 
         components.push_back(_component);
     }
-
-    void ComponentManager::UpdateComponents(float _deltaTime)
-    {
-        for (auto iter : components)
-        {
-            (*iter).ProcessPhysics(_deltaTime);
-        }
-    }
 } // ECS
