@@ -51,7 +51,7 @@ namespace ECS_SFML
         void PopulateDepthEntityMap();
 
 
-        Transform CalculateCachedSpriteTransform(int _spriteCompIndex);
+        Transform CalculateCachedSpriteTransform(int _spriteCompIndex, bool& _outHasTeleported);
 
 
         ResourceManager *resourceManager = nullptr;

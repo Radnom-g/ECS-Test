@@ -11,13 +11,14 @@
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode({200, 200}), "SFML works!");
+    ECS_Game::TestGameWorld gameWorld;
+    ECS::WorldSettings* worldSettings = new ECS::WorldSettings();
+
+    sf::RenderWindow window(sf::VideoMode({worldSettings->worldWidth, worldSettings->worldHeight}), "SFML works!");
     sf::CircleShape shape(100.f);
     shape.setFillColor(sf::Color::Green);
     sf::Clock clock;
 
-    ECS_Game::TestGameWorld gameWorld;
-    ECS::WorldSettings* worldSettings = new ECS::WorldSettings();
 
     gameWorld.Initialise(worldSettings, &window);
 

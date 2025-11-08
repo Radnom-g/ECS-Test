@@ -38,7 +38,9 @@ TODO:
 	- a way to say 'use SpriteComponent for collision'? 
 - TreeSystem that maintains tree structure and adds/removes children, move this logic out of TreeComponent
 - high level ISystem enum state so that systems know if they are early-tick/tick/late-tick/render state and bool for if they have ticked this frame?
+- Perhaps 'teleportedThisFrame' could be a boolean on TransformSystem (stores if the transform has teleported and should NOT lerp visuals)
 
+- Add a DebugSystem that renders extra debug info! text about entity/comp count, renders collision volumes, etc.
 
 FUTURE TODO:
 - Have World create all the Components that make sense (ECS World creates Tree/Timer/etc, ECS_SFML World creates Transform, Velocity, Render components/systems)
@@ -47,4 +49,3 @@ FUTURE TODO:
 
 - JSON system for reading config (entity capacity values) 
 - JSON for serialisation 
-

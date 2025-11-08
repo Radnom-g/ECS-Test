@@ -58,8 +58,9 @@ namespace ECS_SFML
         {
             if (spriteCompsActive[sCompInd])
             {
-                cachedSpriteTransform[sCompInd] = CalculateCachedSpriteTransform(sCompInd);
-                if (!hasCachedSpriteTransform[sCompInd])
+                bool bTeleported = false;
+                cachedSpriteTransform[sCompInd] = CalculateCachedSpriteTransform(sCompInd, bTeleported);
+                if (bTeleported || !hasCachedSpriteTransform[sCompInd])
                 {
                     cachedSpriteTransformPrev[sCompInd] = cachedSpriteTransform[sCompInd];
                 }
@@ -178,13 +179,15 @@ namespace ECS_SFML
         depthMapDirty = false;
     }
 
-    Transform RenderSystem::CalculateCachedSpriteTransform(int _spriteCompIndex)
+    Transform RenderSystem::CalculateCachedSpriteTransform(int _spriteCompIndex, bool& _outHasTeleported)
     {
         int entity = spriteComponent->entityId[_spriteCompIndex];
 
         Transform tEnt = transformSystem->GetEntityWorldTransform(entity, 1);
         Transform tSpr = spriteComponent->CreateLocalTransform(_spriteCompIndex);
         tSpr = Transform::GetAppliedTransform(tEnt, tSpr);
+
+        _outHasTeleported = transformSystem->HasEntityTeleportedThisFrame(entity);
         return tSpr;
     }
 } // ECS_SFML

@@ -40,7 +40,7 @@ namespace ECS_SFML
         position[_componentIndex] = sf::Vector2f(0, 0);
         scale[_componentIndex] = sf::Vector2f(1, 1);
         rotation[_componentIndex] = 0;
-        origin[_componentIndex] = sf::Vector2f(0.5, 0.5);
+        origin[_componentIndex] = sf::Vector2f(0, 0);
         translationDirty[_componentIndex] = true;
     }
 

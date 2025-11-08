@@ -28,6 +28,9 @@ namespace ECS_SFML
         [[nodiscard]] Transform GetEntityWorldTransform(int _entityId, float _frameDelta);
         [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex, float _frameDelta);
 
+        [[nodiscard]] Transform GetEntityWorldTransform(int _entityId );
+        [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex );
+
         // to be called in process tick, these setters will go DOWN the tree and update cached transforms.
         // Intended for systems that process after TransformSystem (most of them).
 
@@ -41,11 +44,17 @@ namespace ECS_SFML
         void RotateEntity(int _entityId, float _rotation);
         void ScaleEntity(int _entityId, const sf::Vector2f& _scale);
 
+        // Sets prev cache to current cache to stop the entity from lerping.
+        void MarkEntityAsTeleported(int _entityId);
+        void MarkTransformAsTeleported(int _transformComponentIndex);
+        bool HasEntityTeleportedThisFrame(int _entityId);
+        bool HasTransformTeleportedThisFrame(int _transformComponentIndex);
 
     protected:
         // Get the transform's parent transform by going up the Tree to find parent Transforms.
         // This will also cache any uncached transforms on its way.
-        Transform GetParentTransform(int _transformCompIndex);
+        // True if it did anything.
+        bool LocalToWorldTransform(int _entityId,  Transform& _outLocalTransformToMakeWorld);
 
         // from an entity, affect the cached transforms of child entities.
         void CalculateCachedTransformOfChildren(int _entityId, const Transform& _parentTransform);

@@ -50,27 +50,53 @@ namespace ECS_SFML
         return transformComponent->CreateLocalTransform(_transformComponentIndex);
     }
 
+    Transform TransformSystem::GetEntityWorldTransform(int _entityId)
+    {
+        int transformInd = transformComponent->GetComponentIndex(_entityId);
+        if (transformInd != -1)
+        {
+            return GetWorldTransform(transformInd);
+        }
+        return Transform::Identity();
+    }
+
+    Transform TransformSystem::GetWorldTransform(int _transformComponentIndex)
+    {
+        if (_transformComponentIndex < cachedTransform.size())
+        {
+            return cachedTransform[_transformComponentIndex];
+        }
+        return transformComponent->CreateLocalTransform(_transformComponentIndex);
+    }
+
     // Update an entity transform directly, and affect its children by updating the caches.
     // This is a bit expensive as we need to recalculate the local by inversing the parent transform.
     void TransformSystem::SetWorldTransform(int _transformInd, const Transform& _newTransform)
     {
         // Get the transform of our parent so that we can invert it.
-        Transform parent = GetParentTransform(_transformInd);
+        // It needs to be an identity matrix transformed by any parents so that it's a 'clean' parent transform.
+        int entity = transformComponent->entityId[_transformInd];
+        Transform parentWorld = Transform::Identity();
+        Transform local = _newTransform;
 
-        // Figure out based on our new final transform, what our local transform is.
-        Transform newLocal = Transform::GetInverseTransform(parent, _newTransform);
+        if (LocalToWorldTransform(entity, parentWorld))
+        {
+            // Figure out based on our new final transform, what our local transform is.
+            // This is a little expensive but we only need to do it if we are actually a child entity.
+            local = Transform::GetInverseTransform(parentWorld, local);
+        }
 
         // Apply it to the transform component values.
-        const sf::Transform& local = newLocal.getTransform();
-        transformComponent->SetPosition(_transformInd, Transform::GetPosition(local));
-        transformComponent->SetRotation(_transformInd, Transform::GetRotation(local).asDegrees());
-        transformComponent->SetScale(_transformInd, Transform::GetScale(local));
+        const sf::Transform& sfLocal = local.getTransform();
+        transformComponent->SetPosition(_transformInd, Transform::GetPosition(sfLocal) + local.getOrigin());
+        transformComponent->SetRotation(_transformInd, Transform::GetRotation(sfLocal).asDegrees());
+        transformComponent->SetScale(_transformInd, Transform::GetScale(sfLocal));
 
         // Cache it
-        cachedTransform[_transformInd] = newLocal;
+        cachedTransform[_transformInd] = local;
 
         // Update the cache on our children (if any).
-        CalculateCachedTransformOfChildren(transformComponent->entityId[_transformInd], newLocal);
+        CalculateCachedTransformOfChildren(entity, local);
     }
 
     void TransformSystem::MoveTransform(int _transformInd, const sf::Vector2f &_movement)
@@ -157,33 +183,44 @@ namespace ECS_SFML
         ScaleTransform(transformComponent->GetComponentIndex(_entityId), _scale);
     }
 
-    Transform TransformSystem::GetParentTransform(int _transformCompIndex)
+    // Pass in your local transform and this will get the multiplied resulting transform based on Transforms
+    // up the tree.
+    bool TransformSystem::LocalToWorldTransform(int _entityId, Transform& _outLocalTransformToMakeWorld)
     {
-        Transform outVal = Transform::Identity();
-        int entity = transformComponent->entityId[_transformCompIndex];
-        while ( (entity = treeComponent->GetParent(entity)) != -1)
+        // Check parents recursively until we find one with a Transform, or run out.
+        while ( (_entityId = treeComponent->GetParent(_entityId)) != -1)
         {
-            int transformInd = transformComponent->GetComponentIndex(entity);
+            int parentTransformInd = transformComponent->GetComponentIndex(_entityId);
             // if we don't have a transform, keep going up the tree until we find one (or reach the top).
-            if (transformInd != -1)
+            if (parentTransformInd != -1)
             {
-                if (!transformNeedsCache[transformInd])
+                if (!transformNeedsCache[parentTransformInd])
                 {
                     // Already cached it
-                    outVal = Transform::GetAppliedTransform(cachedTransform[transformInd], outVal);
-                    return outVal;
+                    _outLocalTransformToMakeWorld = Transform::GetAppliedTransform(cachedTransform[parentTransformInd], _outLocalTransformToMakeWorld);
+                    return true;
                 }
                 else
                 {
                     // Calculate and Cache it (recursively)
-                    Transform parentTransform = GetParentTransform(transformInd);
-                    Transform worldTransform = Transform::GetAppliedTransform(parentTransform, transformComponent->CreateLocalTransform(transformInd));
-                    SetTransformCache(transformInd, worldTransform);
-                    return worldTransform;
+
+                    // Find the world of this Parent entity's transform by checking further up the tree until we hit a cache or the top
+                    Transform _parentWorldTransform = transformComponent->CreateLocalTransform(parentTransformInd);
+
+                    // Recursion!
+                    LocalToWorldTransform(_entityId, _parentWorldTransform);
+
+                    // Cache it!
+                    SetTransformCache(parentTransformInd, _parentWorldTransform);
+
+                    // Now we have the next Transform up the tree.
+                    _outLocalTransformToMakeWorld = Transform::GetAppliedTransform(_parentWorldTransform, _outLocalTransformToMakeWorld);
+
+                    return true;
                 }
             }
         }
-        return outVal;
+        return false;
     }
 
     // Note: this goes off Entity ID, not transform index!
@@ -245,6 +282,36 @@ namespace ECS_SFML
         }
     }
 
+    void TransformSystem::MarkEntityAsTeleported(int _entityId)
+    {
+        int _tComp = transformComponent->GetComponentIndex(_entityId);
+        if (_tComp != -1)
+        {
+            MarkEntityAsTeleported(_tComp);
+        }
+    }
+
+    void TransformSystem::MarkTransformAsTeleported(int _transformComponentIndex)
+    {
+        cachedTransformPrev[_transformComponentIndex] = cachedTransform[_transformComponentIndex];
+        transformPrevCacheSet[_transformComponentIndex] = true;
+    }
+
+    bool TransformSystem::HasEntityTeleportedThisFrame(int _entityId)
+    {
+        int _tComp = transformComponent->GetComponentIndex(_entityId);
+        if (_tComp != -1)
+        {
+            return HasTransformTeleportedThisFrame(_tComp);
+        }
+        return false;
+    }
+
+    bool TransformSystem::HasTransformTeleportedThisFrame(int _transformComponentIndex)
+    {
+        return cachedTransformPrev[_transformComponentIndex].getPosition() == cachedTransform[_transformComponentIndex].getPosition();
+    }
+
     void TransformSystem::SetTransformCache(int _transformIndex, const Transform &_worldTransform)
     {
         if ( transformComponent->GetArraySize() > cachedTransform.size())
@@ -264,12 +331,12 @@ namespace ECS_SFML
         transformComponent->translationDirty[_transformIndex] = false;
 
         // DEBUG: remove!
-        std::stringstream strDebug;
-        strDebug << "Entity #" << transformComponent->entityId[_transformIndex] << " (" << entityManager->GetName(transformComponent->entityId[_transformIndex]) << ")";
-        strDebug << " transform #" << _transformIndex << " ";
-        strDebug << Transform::ToString(cachedTransform[_transformIndex]);
-
-        OutputDebugString(strDebug.str().c_str());
+        // std::stringstream strDebug;
+        // strDebug << "Entity #" << transformComponent->entityId[_transformIndex] << " (" << entityManager->GetName(transformComponent->entityId[_transformIndex]) << ")";
+        // strDebug << " transform #" << _transformIndex << " ";
+        // strDebug << Transform::ToString(cachedTransform[_transformIndex]);
+        //
+        // OutputDebugString(strDebug.str().c_str());
     }
 
     void TransformSystem::ResizeCache()

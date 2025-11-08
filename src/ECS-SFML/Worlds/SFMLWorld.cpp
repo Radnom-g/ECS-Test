@@ -7,6 +7,7 @@
 #include "SFMLWorldContext.h"
 #include "../../ECS-SFML/Systems/RenderSystem.h"
 #include "../../ECS-SFML/Systems/TransformSystem.h"
+#include "../Components/ScreenWrapComponent.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../ECS-SFML/Components/SpriteComponent.h"
 #include "../ECS-SFML/Components/VelocityComponent.h"
@@ -65,10 +66,12 @@ namespace ECS_SFML
         ECS::ComponentSettings transformSettings = ECS_SFML::TransformComponent::CreateSettings<ECS_SFML::TransformComponent>(1000, 100000);
         ECS::ComponentSettings spriteSettings = ECS_SFML::SpriteComponent::CreateSettings<ECS_SFML::SpriteComponent>(1000, 100000);
         ECS::ComponentSettings velocitySettings = ECS_SFML::VelocityComponent::CreateSettings<ECS_SFML::VelocityComponent>(1000, 100000);
+        ECS::ComponentSettings screenWrapSettings = ECS_SFML::ScreenWrapComponent::CreateSettings<ECS_SFML::ScreenWrapComponent>(1000, 100000);
 
         worldSettings->ComponentSettings.push_back(transformSettings);
         worldSettings->ComponentSettings.push_back(spriteSettings);
         worldSettings->ComponentSettings.push_back(velocitySettings);
+        worldSettings->ComponentSettings.push_back(screenWrapSettings);
     }
 
     void SFMLWorld::InitialiseComponents()

@@ -119,6 +119,7 @@ namespace ECS_SFML
         3    12, 13, 14, 15,
        */
 
+        // You may need to add the Origin if using this!
         inline static sf::Vector2f GetPosition( const sf::Transform& _transform )
         {
             const float* m = _transform.getMatrix();
