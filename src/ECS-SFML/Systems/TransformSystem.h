@@ -46,7 +46,6 @@ namespace ECS_SFML
 
         // Sets prev cache to current cache to stop the entity from lerping.
         void MarkEntityAsTeleported(int _entityId);
-        void MarkTransformAsTeleported(int _transformComponentIndex);
         bool HasEntityTeleportedThisFrame(int _entityId);
         bool HasTransformTeleportedThisFrame(int _transformComponentIndex);
 

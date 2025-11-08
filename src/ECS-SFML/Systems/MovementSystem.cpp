@@ -117,7 +117,7 @@ namespace ECS_SFML
         transformSystem->SetWorldTransform(tformIndex, transform);
         if (_movementType == EMovementType::Teleport)
         {
-            transformSystem->MarkTransformAsTeleported(tformIndex);
+            transformSystem->MarkEntityAsTeleported(_entity);
         }
         return true; //TODO: check for collisions and return if it was blocked.
     }

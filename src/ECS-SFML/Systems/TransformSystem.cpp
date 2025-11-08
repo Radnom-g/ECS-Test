@@ -287,14 +287,19 @@ namespace ECS_SFML
         int _tComp = transformComponent->GetComponentIndex(_entityId);
         if (_tComp != -1)
         {
-            MarkEntityAsTeleported(_tComp);
+            cachedTransformPrev[_tComp] = cachedTransform[_tComp];
+            transformPrevCacheSet[_tComp] = true;
         }
-    }
 
-    void TransformSystem::MarkTransformAsTeleported(int _transformComponentIndex)
-    {
-        cachedTransformPrev[_transformComponentIndex] = cachedTransform[_transformComponentIndex];
-        transformPrevCacheSet[_transformComponentIndex] = true;
+        // Have to tell children too, recursively.
+        std::vector<int> _outChildren;
+        if (treeComponent->GetChildren(_entityId, _outChildren))
+        {
+            for ( int childEntity : _outChildren)
+            {
+                MarkEntityAsTeleported(childEntity);
+            }
+        }
     }
 
     bool TransformSystem::HasEntityTeleportedThisFrame(int _entityId)
