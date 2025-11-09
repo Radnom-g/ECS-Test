@@ -9,6 +9,7 @@
 #include "../ECS-SFML/Worlds/SFMLWorldContext.h"
 #include "Components/ComponentManager.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
+#include "../ECS-SFML/Systems/CollisionSystem.h"
 #include "../Components/VelocityComponent.h"
 #include "SFML/Graphics/RenderWindow.hpp"
 
@@ -19,7 +20,9 @@ namespace ECS_SFML
         transformComponent = _context->componentManager->GetComponent<TransformComponent>();
         velocityComponent = _context->componentManager->GetComponent<VelocityComponent>();
         screenWrapComponent = _context->componentManager->GetComponent<ScreenWrapComponent>();
+
         transformSystem = _context->transformSystem;
+        collisionSystem = _context->collisionSystem;
 
         worldSize = sf::Vector2f(static_cast<float>(_context->worldSettings->worldWidth),
                                  static_cast<float>( _context->worldSettings->worldHeight));
@@ -100,6 +103,12 @@ namespace ECS_SFML
                 }
             }
         }
+    }
+
+    void MovementSystem::GetProcessAfter(std::vector<std::string> &_outSystems)
+    {
+        _outSystems.clear();
+        _outSystems.push_back( TransformSystem::SystemName );
     }
 
     bool MovementSystem::MoveEntity(int _entity, sf::Vector2f _movement, EMovementType _movementType)

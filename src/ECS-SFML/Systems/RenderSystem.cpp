@@ -6,6 +6,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "MovementSystem.h"
 #include "TransformSystem.h"
 #include "../ECS-SFML/Components/SpriteComponent.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
@@ -91,9 +92,7 @@ namespace ECS_SFML
             {
                 int entity = iter->second;
 
-                std::vector<int> spriteComps;
-                spriteComponent->GetComponentIndices(entity, spriteComps);
-
+                const IndexList& spriteComps = spriteComponent->GetComponentIndices(entity);
                 for (int spriteComp : spriteComps)
                 {
                     int textureId = spriteComponent->GetTextureIndex(spriteComp);
@@ -132,6 +131,13 @@ namespace ECS_SFML
                 }
             }
         }
+    }
+
+    void RenderSystem::GetProcessAfter(std::vector<std::string> &_outSystems)
+    {
+        _outSystems.clear();
+        _outSystems.push_back( TransformSystem::SystemName );
+        _outSystems.push_back( MovementSystem::SystemName );
     }
 
     const std::vector<int> & RenderSystem::GetDepths()

@@ -30,13 +30,14 @@ namespace ECS
 
     void ComponentManager::InitialiseComponents(WorldContext* _context)
     {
-        for (auto iter : components)
+        for (int i = 0; i < components.size(); i++)
         {
+            IComponent* component = components[i];
             int initialCapacity = 0;
             int maxCapacity = 0;
             for (const auto& settingsIter : _context->worldSettings->ComponentSettings )
             {
-                if (settingsIter.name == iter->GetName())
+                if (settingsIter.name == component->GetName())
                 {
                     initialCapacity = settingsIter.initialCapacity;
                     maxCapacity = settingsIter.maxCapacity;
@@ -44,7 +45,7 @@ namespace ECS
                 }
             }
 
-            iter->InitialiseComponent(_context, initialCapacity, maxCapacity);
+            component->InitialiseComponent(_context, i, initialCapacity, maxCapacity);
         }
     }
 
@@ -60,5 +61,13 @@ namespace ECS
         _componentSettings->name = _component->GetName();
 
         components.push_back(_component);
+    }
+
+    void ComponentManager::ResizeEntityArray(int _newSize)
+    {
+        for (auto iter : components)
+        {
+            iter->ResizeEntityArray(_newSize);
+        }
     }
 } // ECS

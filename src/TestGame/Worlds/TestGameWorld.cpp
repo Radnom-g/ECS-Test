@@ -3,12 +3,17 @@
 //
 
 #include "TestGameWorld.h"
+
+#include <debugapi.h>
+
 #include "Components/ComponentManager.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
 #include "../ECS-SFML/Components/SpriteComponent.h"
 #include "../ECS-SFML/Components/VelocityComponent.h"
 #include "../ECS-SFML/Components/ScreenWrapComponent.h"
 #include "Components/TreeComponent.h"
+
+using namespace ECS;
 
 namespace ECS_Game
 {
@@ -25,14 +30,51 @@ namespace ECS_Game
         ECS_SFML::SpriteComponent* spriteComponent = componentManager.GetComponent<ECS_SFML::SpriteComponent>();
         ECS_SFML::VelocityComponent* velocityComponent = componentManager.GetComponent<ECS_SFML::VelocityComponent>();
         ECS_SFML::ScreenWrapComponent* screenWrapComponent = componentManager.GetComponent<ECS_SFML::ScreenWrapComponent>();
-        ECS::TreeComponent* treeComponent = componentManager.GetComponent<ECS::TreeComponent>();
+        TreeComponent* treeComponent = componentManager.GetComponent<ECS::TreeComponent>();
+
+
+        ///////////////////////////////////////////////////////////
+        // Testing this list:
+        IndexList testList;
+        testList.push_back(0);
+        testList.push_back(3);
+        testList.push_back(5);
+        testList.push_back(4);
+        testList.push_back(4);
+        testList.push_back(3);
+        testList.push_back(6);
+        testList.push_back(3);
+
+        int elementsCount = testList.size();
+        testList.remove_matches(3);
+
+        std::stringstream strDebug;
+        strDebug << "-----elements: [";
+        for (int ii = 0; ii < elementsCount; ++ii)
+        {
+            strDebug << testList[ii];
+        }
+        strDebug << "]";
+        OutputDebugString(strDebug.str().c_str());
+
+
+        std::stringstream strDebug2;
+        strDebug << "-----iterating: [";
+        for (auto ii : testList)
+        {
+            strDebug << testList[ii];
+        }
+        strDebug << "]";
+        OutputDebugString(strDebug.str().c_str());
+        ///////////////////////////////////////////////////////////
+
 
         for (int ii = 0; ii < 10; ii++)
         {
-            int newEnt = entityManager.ActivateEntity("Block");
+            Entity blockEntity = entityManager.ActivateEntity("Block");
 
-            int newT = transformComponent->AddComponent(newEnt);
-            int newS = spriteComponent->AddComponent(newEnt);
+            int newT = transformComponent->AddComponent(blockEntity);
+            int newS = spriteComponent->AddComponent(blockEntity);
 
             spriteComponent->SetTextureIndex(newS, blockSprite);
             transformComponent->SetDepth(newT, 1);
@@ -41,16 +83,16 @@ namespace ECS_Game
 
             transformComponent->SetPosition(newT, randPos);
             transformComponent->SetOrigin(newT, sf::Vector2f(0,0));//sf::Vector2f(16,16));
-                entitiesToRotate.push_back(newEnt);
+                entitiesToRotate.push_back(blockEntity);
         }
 
         for (int ii = 0; ii < 5; ii++)
         {
-            int newEnt = entityManager.ActivateEntity("Blobby");
+            Entity person = entityManager.ActivateEntity("Blobby");
 
-            int newT = transformComponent->AddComponent(newEnt);
-            int newS = spriteComponent->AddComponent(newEnt);
-            int newWrap = screenWrapComponent->AddComponent(newEnt);
+            int newT = transformComponent->AddComponent(person);
+            int newS = spriteComponent->AddComponent(person);
+            int newWrap = screenWrapComponent->AddComponent(person);
 
             spriteComponent->SetTextureIndex(newS, blobbySprite);
             transformComponent->SetDepth(newT, 2);
@@ -65,17 +107,17 @@ namespace ECS_Game
                 acc = sf::Vector2f(std::rand() % 3, std::rand() % 3);
             }
 
-            int velComp = velocityComponent->AddComponent(newEnt);
+            int velComp = velocityComponent->AddComponent(person.index);
             velocityComponent->SetVelocity(velComp, vel);
             velocityComponent->SetAcceleration(velComp, acc);
 
             if (ii <= 2)
             {
-                int fruitEnt = entityManager.ActivateEntity("Fruit");
+                Entity fruitEnt = entityManager.ActivateEntity("Fruit");
                 int fruitT = transformComponent->AddComponent(fruitEnt);
                 int fruitS = spriteComponent->AddComponent(fruitEnt);
 
-                treeComponent->AddChild(newEnt, fruitEnt);
+                treeComponent->AddChild(person, fruitEnt);
 
                 spriteComponent->SetTextureIndex(fruitS, fruitSprite);
                 transformComponent->SetDepth(fruitT, 3);
@@ -93,7 +135,10 @@ namespace ECS_Game
     {
         for (int ii = 0; ii < entitiesToRotate.size(); ++ii)
         {
-            transformSystem.RotateEntity(entitiesToRotate[ii], 90.0f * _deltaSeconds);
+            if (entityManager.GetState(entitiesToRotate[ii]) == Alive)
+            {
+                transformSystem.RotateEntity(entitiesToRotate[ii].index, 90.0f * _deltaSeconds);
+            }
         }
 
         SFMLWorld::UpdateInternal(_deltaSeconds);

@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "CollisionSystem.h"
 #include "Systems/ISystem.h"
 #include "../ECS-SFML/Components/Transform.h"
 
@@ -27,6 +28,8 @@ namespace ECS_SFML
     class MovementSystem : public ECS::ISystem
     {
     public:
+        static constexpr std::string SystemName = "MovementSystem";
+
         enum EMovementType
         {
             Teleport = 0,
@@ -42,11 +45,15 @@ namespace ECS_SFML
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override {}
 
-        inline const char* GetSystemName() override { return "MovementSystem"; }
+        inline const std::string& GetSystemName() override { return SystemName; }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return false; }
 
+        void GetProcessAfter(std::vector<std::string> &_outSystems) override;
+        void GetRenderAfter(std::vector<std::string> &_outSystems) override {};
+
         TransformSystem* transformSystem = nullptr;
+        CollisionSystem* collisionSystem = nullptr;
 
         TransformComponent* transformComponent = nullptr;
         VelocityComponent* velocityComponent = nullptr;

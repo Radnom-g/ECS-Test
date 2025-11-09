@@ -20,13 +20,16 @@ namespace ECS
         int entityCapacityInitial = 1000;
         int entityCapacityMax = 100000;
 
-        unsigned int worldWidth = 200;
-        unsigned int worldHeight = 200;
+        unsigned int worldWidth = 320;
+        unsigned int worldHeight = 256;
+
+        unsigned int tileGridWidth = 32;
+        unsigned int tileGridHeight = 32;
 
         // Info about what Components are in this world, how to construct them, and how many component instances
         // they support.
         std::vector<ComponentSettings> ComponentSettings;
 
-        virtual WorldSettings* Clone() { WorldSettings* clone = new WorldSettings(*this); return clone; }
+        //virtual WorldSettings* Clone() { WorldSettings* clone = new WorldSettings(*this); return clone; }
     };
 } // ECS

@@ -59,6 +59,18 @@ add_executable(ECSTest src/main.cpp
         src/ECS-SFML/Systems/MovementSystem.h
         src/ECS-SFML/Worlds/SFMLWorld.cpp
         src/ECS-SFML/Worlds/SFMLWorld.h
+        src/ECS-SFML/Components/BoundsComponent.cpp
+        src/ECS-SFML/Components/BoundsComponent.h
+        src/ECS/Components/CollisionComponent.cpp
+        src/ECS/Components/CollisionComponent.h
+        src/ECS-SFML/Systems/CollisionSystem.cpp
+        src/ECS-SFML/Systems/CollisionSystem.h
+        src/External/SmallList.h
+        src/External/UGrid.cpp
+        src/External/UGrid.h
+        src/External/IndexList.h
+        src/ECS/Systems/SystemManager.cpp
+        src/ECS/Systems/SystemManager.h
 )
 target_include_directories(ECSTest PRIVATE src/ECS)
 target_compile_features(ECSTest PRIVATE cxx_std_17)

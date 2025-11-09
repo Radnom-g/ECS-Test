@@ -6,17 +6,22 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "../External/IndexList.h"
 
 #include "ComponentSettings.h"
+#include "Entities/EntityManager.h"
 
 namespace ECS
 {
 	struct WorldContext;
+
 	// A Component stores plain data with no behaviour.
     // it maintains a vector for each piece of relevant data.
     class IComponent
     {
     public:
+    	friend class ComponentManager;
+
 	    virtual ~IComponent() = default;
 
     	template <typename T>
@@ -33,36 +38,39 @@ namespace ECS
     	/*
 		// PUBLIC FUNCTIONS:
 		*/
-		bool InitialiseComponent(WorldContext* context, int _initialCapacity, int _maxCapacity);
+    	int GetComponentId() const { return componentId; }
+
+		bool InitialiseComponent(WorldContext* context, int _componentId, int _initialCapacity, int _maxCapacity);
+
+    	int AddComponent(const Entity& _entity) { return AddComponent(_entity.index); }
     	int AddComponent(int _entityId);
+    	void RemoveComponent(const Entity& _entity) { RemoveComponentsFromEntity(_entity.index); }
     	void RemoveComponentsFromEntity(int _entityId);
     	void RemoveComponent(int _componentIndex);
-
-        [[nodiscard]] bool HasComponent(int _entityId) const;
 
         void GetEntitiesWithComponent(std::vector<int>& _outEntityList);
 		void FilterKeepEntitiesWithComponent(std::vector<int>& _entityListFilter);
     	void FilterKeepEntitiesWithoutComponent(std::vector<int>& _entityListFilter);
 
+    	[[nodiscard]] bool HasComponent(int _entityId) const
+    	{
+    		return entityComponents[_entityId].size() > 0;
+    	}
+
     	// Get component by index for direct access to data. However, if the component becomes inactive, it can be
-    	// reused by another Entity, so don't hang on to the index!
-    	// -1 means invalid.
+    	// reused by another Entity, so don't hang on to the index without checking if the original Entity is still alive!
     	int GetComponentIndex(int _entityId) const
     	{
-    		if (IsUniquePerEntity())
-    		{
-    			auto iter = entityIdComponentIndex.find(_entityId);
-    			return iter != entityIdComponentIndex.end() ? iter->second : -1;
-    		}
-    		auto iter = entityIdComponentIndexMap.find(_entityId);
-    		return iter != entityIdComponentIndexMap.end() ? iter->second : -1;
+    		return entityComponents[_entityId][0];
     	}
 
     	// This will return a list of component indices belonging to this Entity.
-    	bool GetComponentIndices(int _entityId, std::vector<int>& _componentIndexList);
+    	const IndexList& GetComponentIndices(int _entityId)
+    	{
+			return entityComponents[_entityId];
+    	}
 
     	[[nodiscard]] bool IsInitialised() const { return isInitialised; }
-
     	[[nodiscard]] int GetArraySize() const { return entityId.size(); }
 
     	/*
@@ -83,9 +91,10 @@ namespace ECS
     	// erase all values at given index
     	void ClearComponentAtIndex(int _componentIndex);
 
-    	// returns the start->end of the range of components (by index) belonging to this entity.
-    	inline std::pair<std::multimap<int, int>::iterator, std::multimap<int, int>::iterator> EntityIdToComponentRange(int _entityId) { auto thing = entityIdComponentIndexMap.equal_range(_entityId); return thing; }
+    	void ResizeEntityArray(int _newSize);
 
+    	// For ComponentManager to assign.
+    	void SetComponentId(int _index) { componentId = _index; }
 
     	/*
 		// PROTECTED PURE VIRTUAL FUNCTIONS
@@ -108,8 +117,6 @@ namespace ECS
 		// (Called internally from IComponent)
 		// These might not be useful in all cases, so they are not pure virtual.
 		*/
-    	// Called when (technically just before) a Component is removed.
-    	virtual void RemoveComponentsFromEntityInternal(int _entityId) {};
     	// Called when (technically just before) a Component is removed.
     	virtual void RemoveComponentInternal(int _componentIndex) {};
 
@@ -134,6 +141,11 @@ namespace ECS
 		// (derived classes cannot directly access these)
 		*/
 
+    	// What unique index this Component has.
+    	// So that we can do quick Entity lookups like:
+    	// int treeComponentIndex = entityManager->GetComponent( entity, treeComponent->GetComponentIndex() );
+    	int componentId = -1;
+
     	// If this Component has been correctly initialised with World context.
     	bool isInitialised = false;
 
@@ -145,17 +157,15 @@ namespace ECS
     	// so we can quickly check the next one in order, rather than going from 0 each time.
     	int nextIndex = 0;
 
-    	// Map of entity ID to the components that belong to it (via index).
-    	// Used if 'IsUniquePerEntity' is false.
-    	std::multimap<int, int> entityIdComponentIndexMap;
-
-    	// Map of entity ID to the component (single) that belong to it (via index).
-    	// Used if 'IsUniquePerEntity' is true.
-    	std::map<int, int> entityIdComponentIndex;
-
     	// up to date list of Entities that have this component.
+    	// Updated when this component is added or removed from an entity.
+    	// Perhaps not necessary if we're removing a lot of components at runtime?
     	std::vector<int> entityList;
 
     	bool entityListDirty = true;
+
+    	// The size of this is the length of Entities!
+    	// It stores a list of Component Indices for each Entity.
+    	std::vector<IndexList> entityComponents{};
     };
 } // ECS

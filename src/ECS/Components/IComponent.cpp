@@ -9,7 +9,7 @@
 
 namespace ECS
 {
-    bool IComponent::InitialiseComponent(WorldContext *context, int _initialCapacity, int _maxCapacity)
+    bool IComponent::InitialiseComponent(WorldContext *context, int _componentId, int _initialCapacity, int _maxCapacity)
     {
         if (isInitialised)
         {
@@ -17,6 +17,7 @@ namespace ECS
             return false;
         }
 
+        componentId = _componentId;
         isInitialised = true;
 
         maxCapacity = _maxCapacity;
@@ -29,29 +30,19 @@ namespace ECS
     {
         if (IsUniquePerEntity())
         {
+            // If we can only have one, and we already have one, return it
             if (HasComponent(_entityId))
-                return entityIdComponentIndex[_entityId];
+                return GetComponentIndex(_entityId);
         }
-
-        entityListDirty = true;
 
         int componentIndex = GetNextInactiveComponent();
         if (componentIndex != -1)
         {
             entityId[componentIndex] = _entityId;
-
-            if (IsUniquePerEntity())
-            {
-                entityIdComponentIndex.emplace(_entityId, componentIndex);
-            }
-            else
-            {
-                entityIdComponentIndexMap.emplace(_entityId, componentIndex);
-            }
-
+            entityComponents[_entityId].push_back(componentIndex);
             AddComponentInternal(_entityId, componentIndex);
-
             nextIndex++;
+            entityListDirty = true;
         }
 
         return componentIndex;
@@ -59,87 +50,49 @@ namespace ECS
 
     void IComponent::RemoveComponentsFromEntity(int _entityId)
     {
-        if (!HasComponent(_entityId))
-            return;
+        // Make a copy as RemoveComponent will also remove from the original entityComponents List.
+        IndexList listCopy(entityComponents[_entityId]);
 
-        entityListDirty = true;
-
-        // Call internal first, in case it relies on 'entityIdComponentIndex' or similar.
-        RemoveComponentsFromEntityInternal(_entityId);
-
-        if (IsUniquePerEntity())
+        for (int _ind = 0; _ind < listCopy.size(); _ind++)
         {
-            int compIndex = GetComponentIndex(_entityId);
-            ClearComponentAtIndex(compIndex);
-            entityIdComponentIndex.erase(_entityId);
+            RemoveComponent(_ind);
         }
-        else
-        {
-            // get the range of component indices for this Entity
-            auto iterPair = EntityIdToComponentRange(_entityId);
-            for ( auto iter = iterPair.first; iter != iterPair.second; ++iter)
-            {
-                // Clear them out
-                ClearComponentAtIndex(iter->second);
-            }
-            // erases all values for the key
-            entityIdComponentIndexMap.erase(_entityId);
-        }
+
+        // we SHOULD have removed components, but just in case.
+        entityComponents[_entityId].clear();
     }
 
     void IComponent::RemoveComponent(int _componentIndex)
     {
-        entityListDirty = true;
+        if (_componentIndex == -1)
+            return;
+
         // Call internal first, in case it relies on 'entityIdComponentIndex' or similar.
         RemoveComponentInternal(_componentIndex);
 
-        if (IsUniquePerEntity())
+        int entity = entityId[_componentIndex];
+        if (entity != -1)
         {
-            int entity = entityId[_componentIndex];
-            if (entity)
-            {
-                entityIdComponentIndex.erase(entity);
-            }
-        }
-        else
-        {
-            int entity = entityId[_componentIndex];
-
-            // erases matching Component Index values in the multimap for the Entity as key (should only be one match).
-            auto [first, last] = entityIdComponentIndexMap.equal_range(entity);
-            for (auto it = first; it != last; ++it)
-            {
-                if (it->second == _componentIndex)
-                {
-                    entityIdComponentIndexMap.erase(it);
-                    break; //should only be one match.
-                }
-            }
+            entityListDirty = true;
+            IndexList& list = entityComponents[entity];
+            list.remove_matches(_componentIndex);
         }
 
         ClearComponentAtIndex(_componentIndex);
     }
 
-    bool IComponent::HasComponent(int _entityId) const
-    {
-        if (IsUniquePerEntity())
-        {
-            auto iter = entityIdComponentIndex.find(_entityId);
-            return iter != entityIdComponentIndex.end();
-        }
-        auto iter = entityIdComponentIndexMap.find(_entityId);
-        return iter != entityIdComponentIndexMap.end();
-    }
 
     void IComponent::GetEntitiesWithComponent(std::vector<int> &_outEntityList)
     {
         if (entityListDirty)
         {
-            // We keep this map of entity ID -> component index up-to-date, so we can just return its keys.
             entityList.clear();
-            for (auto iter = entityIdComponentIndexMap.begin(); iter != entityIdComponentIndexMap.end(); ++iter)
+            for (auto iter = entityId.begin(); iter != entityId.end(); ++iter)
             {
-                entityList.push_back((*iter).first);
+                if (*iter != -1)
+                {
+                    entityList.push_back((*iter));
+                }
             }
             entityListDirty = false;
         }
@@ -151,12 +104,7 @@ namespace ECS
         auto iter = _entityListFilter.begin();
         while (iter != _entityListFilter.end())
         {
-            int checkEntityId = *iter;
-            if (entityIdComponentIndexMap.contains(checkEntityId))
-            {
-                ++iter;
-            }
-            else
+            if (entityComponents[*iter][0] == -1)
             {
                 iter = _entityListFilter.erase(iter);
             }
@@ -168,47 +116,28 @@ namespace ECS
         auto iter = _entityListFilter.begin();
         while (iter != _entityListFilter.end())
         {
-            int checkEntityId = *iter;
-            if (entityIdComponentIndexMap.contains(checkEntityId))
+            if (entityComponents[*iter][0] != -1)
             {
                 iter = _entityListFilter.erase(iter);
             }
-            else
-            {
-                ++iter;
-            }
         }
-    }
-
-    bool IComponent::GetComponentIndices(int _entityId, std::vector<int> &_componentIndexList)
-    {
-        _componentIndexList.clear();
-
-        if (IsUniquePerEntity())
-        {
-            int compIndex = GetComponentIndex(_entityId);
-            if (compIndex != -1)
-            {
-                _componentIndexList.push_back(compIndex);
-                return true;
-            }
-            return false;
-        }
-
-        auto [first, last] = entityIdComponentIndexMap.equal_range(_entityId);
-        for (auto it = first; it != last; ++it)
-        {
-            _componentIndexList.push_back(it->second);
-        }
-
-        return !_componentIndexList.empty();
     }
 
     void IComponent::ClearComponentAtIndex(int _componentIndex)
     {
         ClearComponentAtIndexInternal(_componentIndex);
 
+        int entity = entityId[_componentIndex];
+        if (entity != -1)
+        {
+            entityComponents[entity].clear();
+        }
         entityId[_componentIndex] = -1;
+    }
+
+    void IComponent::ResizeEntityArray(int _newSize)
+    {
+        entityComponents.resize(_newSize, IndexList());
     }
 
     void IComponent::SetCapacity(int _newCapacity)

@@ -17,10 +17,41 @@ namespace ECS
         // TEMP: Remove once TreeSystem is ready.
         std::vector<int>& GetTreeDepthVector() { return treeDepth; }
 
-        [[nodiscard]] bool IsChildOf(int _entityParent, int _entityChild) const;
-        bool GetChildren(int _entityParent, std::vector<int>& _outChildren) const;
-        int GetParent(int _entityChild) const;
 
+        [[nodiscard]] inline bool IsEntityDirectChildOf(Entity _entityParent, Entity _entityChild) const
+        { return IsEntityDirectChildOf(_entityParent.index, _entityChild.index); }
+
+        [[nodiscard]] inline bool IsEntityDirectChildOf(int _entityParent, int _entityChild) const
+        {
+            int treeComp = GetComponentIndex(_entityChild);
+            if (treeComp == -1)
+                return false;
+            return (parentId[treeComp] == _entityParent);
+        }
+
+        const IndexList& GetChildren(Entity _entityParent) const { return GetChildren(_entityParent.index); }
+        const IndexList& GetChildren(int _entityParent) const
+        {
+            int treeComp = GetComponentIndex(_entityParent);
+            if (treeComp == -1)
+                return IndexListConstants::EmptyList;
+            return GetChildrenFromComp(treeComp);
+        }
+
+        const IndexList& GetChildrenFromComp(int _treeCompParent) const
+        {
+            return childrenIds[_treeCompParent];
+        }
+
+        int GetParent(int _entityChild) const
+        {
+            int treeComp = GetComponentIndex(_entityChild);
+            if (treeComp == -1)
+                return -1;
+            return parentId[treeComp];
+        }
+
+        void AddChild(const Entity& _parent, const Entity& _child) { AddChild(_parent.index, _child.index); }
         void AddChild(int _entityParent, int _entityChild);
         void RemoveChild(int _entityParent, int _entityChild);
 
@@ -50,7 +81,7 @@ namespace ECS
         // how far down the tree are we. 0 = top-level parent. 1 = child, 2 = grandchild etc.
         std::vector<int> treeDepth{};
         // Maps component index to child entity IDs
-        std::map<int, std::vector<int>> childrenIds;
+        std::vector<IndexList> childrenIds;
 
 
     };

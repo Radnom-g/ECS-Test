@@ -7,6 +7,8 @@
 
 #include "Systems/ISystem.h"
 #include "../ECS-SFML/Components/Transform.h"
+#include "../External/UGrid.h"
+
 
 namespace ECS
 {
@@ -23,7 +25,10 @@ namespace ECS_SFML
     class TransformSystem : public ECS::ISystem
     {
     public:
+        static constexpr std::string SystemName = "TransformSystem";
         bool Initialise(SFMLWorldContext* _context);
+
+        ~TransformSystem() override;
 
         [[nodiscard]] Transform GetEntityWorldTransform(int _entityId, float _frameDelta);
         [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex, float _frameDelta);
@@ -61,7 +66,11 @@ namespace ECS_SFML
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override {}
 
-        inline const char* GetSystemName() override { return "TransformSystem"; }
+        // Perhaps if we add a TreeSystem, add it in here. Otherwise, transform should happen first.
+        void GetProcessAfter(std::vector<std::string> &_outSystems) override {}
+        void GetRenderAfter(std::vector<std::string> &_outSystems) override {}
+
+        inline const std::string& GetSystemName() override { return SystemName; }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return false; }
 
@@ -83,5 +92,9 @@ namespace ECS_SFML
 
         // This is so that we can set the 'prev' as well if it's brand new
         int cachedTransformSize = 0;
+
+        // As the Transform controls how things move, it should also contain and upgrade the Grid used for collision.
+        // The CollisionSystem itself can actually act on this, but it's better to maintain it in here.
+        Grid::UGrid* grid = nullptr;
     };
 } // ECS_SFML

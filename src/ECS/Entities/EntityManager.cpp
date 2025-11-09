@@ -9,6 +9,7 @@
 
 #include "../Components/ComponentManager.h"
 #include "Components/TreeComponent.h"
+#include "Worlds/WorldContext.h"
 
 namespace ECS
 {
@@ -23,12 +24,14 @@ namespace ECS
 		isInitialised = true;
 		maxCapacity = _maxCapacity;
 
+		componentManager = context->componentManager;
+		componentCount = componentManager->GetComponentCount();
+
 		assert(_initialCapacity > 0 && "Initial Capacity must be > 0.");
 		assert(_maxCapacity >= _initialCapacity && "Max Capacity must be >= Initial Capacity");
 
-		entityNames.reserve(_initialCapacity);
-		entityIds.reserve(_initialCapacity);
-		activeEntities.reserve(_initialCapacity);
+		SetCapacity(_initialCapacity);
+
 
 		return true;
 	}
@@ -36,13 +39,20 @@ namespace ECS
 	void EntityManager::ResetAll()
 	{
 		// Delete the entities we added.
-		for (int i = 0; i < entityIds.size(); ++i)
+		for (int i = 0; i < state.size(); ++i)
 		{
-			DeactivateEntity(i);
+			if (state[i] != EEntityState::Alive)
+			{
+				DeactivateEntity(i);
+			}
+			else
+			{
+				state[i] = EEntityState::Dead;
+			}
 		}
 	}
 
-	int EntityManager::ActivateEntity(const char* _name, int _parentId)
+	Entity EntityManager::ActivateEntity(const char* _name, int _parentId)
 	{
 		// This will find the next inactive Entity index in our arrays of entities.
 		// If the array is full, then it will resize our arrays up to our max capacity.
@@ -51,98 +61,92 @@ namespace ECS
 
 		if (entityIndex == -1)
 		{
-			return -1;
+			return Entity(-1, -1);
 		}
 
 		// Set up a new Entity
-		int newEntityId = nextId;
-		nextId++;
 
-		// Point the map to the entity index
-		entityIndexMap[newEntityId] = entityIndex;
+		name[entityIndex] = _name;
+		state[entityIndex] = EEntityState::Alive;
 
-		entityNames[entityIndex] = _name;
-		entityIds[entityIndex] = newEntityId;
-		activeEntities[entityIndex] = true;
+		int newUniqueId = uniqueEntityCount;
+		uniqueEntityCount++;
+		uniqueId[entityIndex] = newUniqueId;
 
 		char numstr[64];
-		sprintf_s(numstr, "%s_%d", _name, newEntityId);
-		OutputDebugString("Create Entity: ");
+		sprintf_s(numstr, "Create Entity[%d]: %s:%d", entityIndex, _name, newUniqueId);
 		OutputDebugString(numstr);
-		OutputDebugString("\n");
 
 		if (_parentId != -1)
 		{
 			TreeComponent* treeComp = componentManager->GetComponent<TreeComponent>();
-			treeComp->AddChild(_parentId, newEntityId);
+			treeComp->AddChild(_parentId, entityIndex);
 		}
 
-		return newEntityId;
+		return Entity(entityIndex, newUniqueId);
 	}
 
-	void EntityManager::DeactivateEntity(int _id)
+	bool EntityManager::DeactivateEntity(const Entity& entity)
 	{
-		auto mapIter = entityIndexMap.find(_id);
-		if (mapIter != entityIndexMap.end())
+		if (entity.index < 0 || entity.index >= currentCapacity)
 		{
-			componentManager->OnEntityDestroyed(_id);
-
-			entityNames[mapIter->second] = "Invalid";
-			entityIds[mapIter->second] = -1;
-			activeEntities[mapIter->second] = false;
-
-			entityIndexMap.erase(mapIter);
+			// Not a valid index.
+			return false;
 		}
+
+		if (uniqueId[entity.index] != entity.uniqueId)
+		{
+			// entity doesn't exist any more.
+			return false;
+		}
+
+		if (state[entity.index] != EEntityState::Alive)
+		{
+			// already dead.
+			return false;
+		}
+
+		char numstr[64];
+		sprintf_s(numstr, "Destroy Entity[%d]: %s:%d", entity.index, name[entity.index].c_str(), entity.uniqueId);
+		OutputDebugString(numstr);
+
+		return DeactivateEntity(entity.index);
 	}
 
-	bool EntityManager::IsActive(int _id)
+	bool EntityManager::DeactivateEntity(int _entityIndex)
 	{
-		auto mapIter = entityIndexMap.find(_id);
-		if (mapIter != entityIndexMap.end())
-		{
-			int index = (*mapIter).second;
-			return (activeEntities[index]);
-		}
-		// It has expired.
-		return false;
-	}
+		bool bWasAlive = state[_entityIndex] == EEntityState::Alive;
 
-	const std::string & EntityManager::GetName(int _id)
-	{
-		auto mapIter = entityIndexMap.find(_id);
-		if (mapIter != entityIndexMap.end())
-		{
-			int index = (*mapIter).second;
-			return (entityNames[index]);
-		}
-		// It has expired.
-		return "Invalid";
+		componentManager->OnEntityDestroyed(_entityIndex);
+
+		name[_entityIndex] = "Invalid";
+		state[_entityIndex] = EEntityState::Dead;
+		uniqueId[_entityIndex] = -1;
+
+		return bWasAlive;
 	}
 
 	int EntityManager::GetNextInactiveEntityIndex()
 	{
-		int capacity = (int)activeEntities.size();
-		for (int i = 0; i < capacity; ++i)
+		for (int i = 0; i < currentCapacity; ++i)
 		{
-			int index = (nextIndex + i) % capacity;
+			int index = (nextIndex + i) % currentCapacity;
 
-			if (!activeEntities[index])
+			if (state[index] == EEntityState::Dead)
 			{
 				return index;
 			}
 		}
 
-		if (capacity < maxCapacity || maxCapacity == -1)
+		if (currentCapacity < maxCapacity || maxCapacity == -1)
 		{
-			int newCapacity = std::max( capacity * 2, 1);
-			if (maxCapacity > 0)
+			int beforeCapacity = currentCapacity;
+			int newCapacity = std::max( currentCapacity * 2, 1);
+			SetCapacity(newCapacity);
+
+			if (newCapacity > beforeCapacity)
 			{
-				newCapacity = std::min(newCapacity, maxCapacity);
-			}
-			if (newCapacity > capacity)
-			{
-				SetCapacity(newCapacity);
-				nextIndex = capacity;
+				nextIndex = beforeCapacity;
 				return nextIndex;
 			}
 		}
@@ -152,10 +156,17 @@ namespace ECS
 
 	void EntityManager::SetCapacity(int _newCapacity)
 	{
-		entityNames.resize(_newCapacity, "Invalid");
-		entityIds.resize(_newCapacity, -1);
-		activeEntities.resize(_newCapacity, false);
+		if (maxCapacity > 0)
+		{
+			_newCapacity = std::min(_newCapacity, maxCapacity);
+		}
 
+		currentCapacity = _newCapacity;
+		name.resize(currentCapacity, "Invalid");
+		state.resize(currentCapacity, EEntityState::Dead);
+		uniqueId.resize(currentCapacity, -1);
+
+		componentManager->ResizeEntityArray(currentCapacity);
 	}
 
 } // ECS

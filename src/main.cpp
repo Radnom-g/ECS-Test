@@ -13,20 +13,13 @@ int main()
 {
     ECS_Game::TestGameWorld gameWorld;
     ECS::WorldSettings* worldSettings = new ECS::WorldSettings();
-
-    sf::RenderWindow window(sf::VideoMode({worldSettings->worldWidth, worldSettings->worldHeight}), "SFML works!");
-    sf::CircleShape shape(100.f);
-    shape.setFillColor(sf::Color::Green);
     sf::Clock clock;
 
-
+    sf::RenderWindow window(sf::VideoMode({worldSettings->worldWidth, worldSettings->worldHeight}), "SFML works!");
     gameWorld.Initialise(worldSettings, &window);
-
-
 
     float accumulator = 0.0f;
     const sf::Time update_ms = sf::seconds(1.f / 60.f);
-
     sf::Time elapsed = clock.restart();
     while (window.isOpen())
     {

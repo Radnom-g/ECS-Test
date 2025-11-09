@@ -28,7 +28,26 @@ namespace ECS_SFML
         entityManager = _context->entityManager;
 
         isInitialised = true;
+
+        float tileWidth = static_cast<float>(_context->worldSettings->tileGridWidth);
+        float tileHeight = static_cast<float>(_context->worldSettings->tileGridHeight);
+        float gridWidth = static_cast<float>(_context->worldSettings->worldWidth);
+        float gridHeight = static_cast<float>(_context->worldSettings->worldHeight);
+
+        float averageEntityRadius = static_cast<float>(_context->worldSettings->tileGridWidth) * 0.5f;
+
+        grid = Grid::ugrid_create(averageEntityRadius, tileWidth, tileHeight, 0, 0, gridWidth, gridHeight);
+
         return true;
+    }
+
+    TransformSystem::~TransformSystem()
+    {
+        if (grid != nullptr)
+        {
+            delete grid;
+            grid = nullptr;
+        }
     }
 
     Transform TransformSystem::GetEntityWorldTransform(int _entityId, float _frameDelta)
@@ -227,13 +246,16 @@ namespace ECS_SFML
     void TransformSystem::CalculateCachedTransformOfChildren(int _entityId, const Transform& _parentTransform)
     {
         // check for children.
-        std::vector<int> _outChildren;
-        if (treeComponent->GetChildren(_entityId, _outChildren))
+        const IndexList& children = treeComponent->GetChildren(_entityId);
+        if (children.size() != 0)
         {
             Transform newChildTransform = _parentTransform;
 
-            for ( int childEntity : _outChildren)
+            for ( int childEntity : children)
             {
+                if (childEntity == -1)
+                    continue;
+
                 // If this component has a Transform, update the cached transform.
                 int transformInd = transformComponent->GetComponentIndex(childEntity);
                 if (transformInd != -1)
@@ -280,6 +302,11 @@ namespace ECS_SFML
                 CalculateCachedTransformOfChildren(entity, identity);
             }
         }
+
+        if (grid)
+        {
+            Grid::ugrid_optimize(grid);
+        }
     }
 
     void TransformSystem::MarkEntityAsTeleported(int _entityId)
@@ -292,11 +319,14 @@ namespace ECS_SFML
         }
 
         // Have to tell children too, recursively.
-        std::vector<int> _outChildren;
-        if (treeComponent->GetChildren(_entityId, _outChildren))
+        const IndexList& children = treeComponent->GetChildren(_entityId);
+        if (children.size() != 0)
         {
-            for ( int childEntity : _outChildren)
+            for ( int childEntity : children)
             {
+                if (childEntity == -1)
+                    continue;
+
                 MarkEntityAsTeleported(childEntity);
             }
         }
@@ -324,13 +354,22 @@ namespace ECS_SFML
             ResizeCache();
         }
 
-        cachedTransform[_transformIndex] = _worldTransform;
-
         if (!transformPrevCacheSet[_transformIndex])
         {
             cachedTransformPrev[_transformIndex] = _worldTransform;
             transformPrevCacheSet[_transformIndex] = true;
+
+            Grid::ugrid_insert(grid, transformComponent->entityId[_transformIndex], _worldTransform.getPosition().x, _worldTransform.getPosition().y);
         }
+        else
+        {
+            const sf::Vector2f& lastPos = cachedTransform[_transformIndex].getPosition();
+            const sf::Vector2f& newPos = _worldTransform.getPosition();
+
+            Grid::ugrid_move(grid, transformComponent->entityId[_transformIndex], lastPos.x,lastPos.y, newPos.x, newPos.y);
+        }
+
+        cachedTransform[_transformIndex] = _worldTransform;
 
         transformNeedsCache[_transformIndex] = false;
         transformComponent->translationDirty[_transformIndex] = false;

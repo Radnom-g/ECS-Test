@@ -1,6 +1,12 @@
 # ECS-Test
 Creating an Entity-Component-System framework in C++ to learn more about the approach. Using the SFML for rendering and other requirements. Intended for personal research.
 
+Goals:
+- To learn more about Entity Component System and storing data in contiguous arrays ('structs of arrays') instead of in polymorphic data structures ('arrays of structs')
+- To implement a fixed physics timestep with interpolated visuals using the method I read about so many years ago (https://gafferongames.com/post/fix_your_timestep/) 
+- To get many entities on-screen that can change their behaviour by adding and removing components on the fly
+
+
 
 
 Entity:
@@ -21,6 +27,9 @@ Component:
 System:
 - Something that processes the data in Components.
 - RenderingSystem grabs the Transform and Sprite components to determine where to render Sprites, and in what order.
+- TransformSystem caches world locations of entities and updates the world transforms of child entities 
+- MovementSystem applies acceleration and velocity and repositions actors.
+- CollisionSystem checks the world for overlaps. 
 
 
 World:
@@ -39,13 +48,16 @@ TODO:
 - TreeSystem that maintains tree structure and adds/removes children, move this logic out of TreeComponent
 - high level ISystem enum state so that systems know if they are early-tick/tick/late-tick/render state and bool for if they have ticked this frame?
 - Perhaps 'teleportedThisFrame' could be a boolean on TransformSystem (stores if the transform has teleported and should NOT lerp visuals)
-
 - Add a DebugSystem that renders extra debug info! text about entity/comp count, renders collision volumes, etc.
+- Add a Tileset Component and System with simple grid collision 
+
+- do a quick test of IndexList::remove_matches
 
 FUTURE TODO:
 - Have World create all the Components that make sense (ECS World creates Tree/Timer/etc, ECS_SFML World creates Transform, Velocity, Render components/systems)
 - Have a System registry
 - Systems can say they want to process before/after other Systems, to ensure TransformSystem runs before RenderSystem for example 
+- Perhaps Components should only be accessed by friend systems? Makes it hard to expand though
 
 - JSON system for reading config (entity capacity values) 
 - JSON for serialisation 

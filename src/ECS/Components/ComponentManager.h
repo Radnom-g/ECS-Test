@@ -16,6 +16,7 @@ namespace ECS
 
         void InitialiseComponents(WorldContext* _context);
         void RegisterComponent(ComponentSettings* _componentSettings, IComponent* _component);
+        void ResizeEntityArray(int _newSize);
 
         template <typename T>
         T* GetComponent()
@@ -32,8 +33,10 @@ namespace ECS
             return nullptr;
         }
 
+        int GetComponentCount() { return static_cast<int>(components.size()); }
+
     protected:
-        std::vector<IComponent*> components;
+        std::vector<IComponent*> components {};
 
     };
 } // ECS

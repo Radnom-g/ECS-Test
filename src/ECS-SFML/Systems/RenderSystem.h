@@ -32,15 +32,20 @@ namespace ECS_SFML
     class RenderSystem : public ECS::ISystem
     {
     public:
+        static constexpr std::string SystemName = "RenderSystem";
         bool Initialise(SFMLWorldContext* _context);
 
     protected:
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override;
 
-        inline const char* GetSystemName() override { return "RenderSystem"; }
+        inline const std::string& GetSystemName() override { return SystemName; }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return true; }
+
+        // process after Movement and Transform
+        void GetProcessAfter(std::vector<std::string> &_outSystems) override;
+        void GetRenderAfter(std::vector<std::string> &_outSystems) override {};
 
         // Ask for a list of active Depths, in order.
         const std::vector<int>& GetDepths();

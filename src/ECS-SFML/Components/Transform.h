@@ -16,7 +16,6 @@ namespace ECS_SFML
 
     struct Transform : public sf::Transformable
     {
-
         void SetToIdentity()
         {
             setPosition(sf::Vector2f(0,0));

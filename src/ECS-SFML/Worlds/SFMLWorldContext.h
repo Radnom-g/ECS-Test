@@ -16,10 +16,12 @@ namespace ECS_SFML
     class TransformSystem;
     class RenderSystem;
     class MovementSystem;
+    class CollisionSystem;
 
     struct SFMLWorldContext : public ECS::WorldContext
     {
         TransformSystem* transformSystem = nullptr;
+        CollisionSystem* collisionSystem = nullptr;
         RenderSystem* renderSystem = nullptr;
         MovementSystem* movementSystem = nullptr;
         ResourceManager* resourceManager = nullptr;

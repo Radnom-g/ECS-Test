@@ -18,6 +18,6 @@ namespace ECS_Game
         void UpdateInternal(float _deltaSeconds) override;
 
     protected:
-        std::vector<int> entitiesToRotate;
+        std::vector<ECS::Entity> entitiesToRotate;
     };
 } // ECS_Game

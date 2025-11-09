@@ -18,7 +18,6 @@ namespace ECS
         World* world = nullptr;
         EntityManager* entityManager = nullptr;
         ComponentManager* componentManager = nullptr;
-
         WorldSettings* worldSettings = nullptr;
     };
 } // ECS
