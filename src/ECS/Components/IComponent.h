@@ -22,6 +22,9 @@ namespace ECS
     public:
     	friend class ComponentManager;
 
+    	using ComponentAddedDelegate = std::function<void(Entity, int)>; //entity, component index
+    	using ComponentRemovedDelegate = std::function<void(Entity, int)>; //entity, component index
+
 	    virtual ~IComponent() = default;
 
     	template <typename T>
@@ -42,11 +45,11 @@ namespace ECS
 
 		bool InitialiseComponent(WorldContext* context, int _componentId, int _initialCapacity, int _maxCapacity);
 
-    	int AddComponent(const Entity& _entity) { return AddComponent(_entity.index); }
-    	int AddComponent(int _entityId);
-    	void RemoveComponent(const Entity& _entity) { RemoveComponentsFromEntity(_entity.index); }
-    	void RemoveComponentsFromEntity(int _entityId);
-    	void RemoveComponent(int _componentIndex);
+    	int AddComponent(const Entity& _entity);
+
+    	void RemoveComponentsFromEntity(const Entity& _entity);
+    	void RemoveComponentByIndex(int _componentIndex);
+    	void RemoveComponentByIndex(const Entity& _entity, int _componentIndex);
 
         void GetEntitiesWithComponent(std::vector<int>& _outEntityList);
 		void FilterKeepEntitiesWithComponent(std::vector<int>& _entityListFilter);
@@ -55,6 +58,13 @@ namespace ECS
     	[[nodiscard]] bool HasComponent(int _entityId) const
     	{
     		return entityComponents[_entityId].size() > 0;
+    	}
+
+    	[[nodiscard]] bool IsComponentActive(int _componentIndex) const
+    	{
+    		if (_componentIndex <0 || _componentIndex >= entityId.size())
+    			return false;
+    		return entityId[_componentIndex] != -1;
     	}
 
     	// Get component by index for direct access to data. However, if the component becomes inactive, it can be
@@ -81,13 +91,16 @@ namespace ECS
     	// if a single Entity can have multiple of this Component.
         [[nodiscard]] virtual bool IsUniquePerEntity() const = 0;
 
+    	void RegisterOnAddComponent(ComponentAddedDelegate _delegate);
+    	void RegisterOnRemoveComponent(ComponentRemovedDelegate _delegate);
+
 
     protected:
 
     	/*
 		// PROTECTED FUNCTIONS
 		*/
-    	void RemoveComponentByIndex(int _componentIndex);
+
     	// erase all values at given index
     	void ClearComponentAtIndex(int _componentIndex);
 
@@ -129,6 +142,9 @@ namespace ECS
         std::vector<int> entityId{};
 
     private:
+    	std::vector<ComponentAddedDelegate> componentAddedDelegates;
+    	std::vector<ComponentRemovedDelegate> componentRemovedDelegates;
+
     	/*
 		// PRIVATE FUNCTIONS
 		// (Called internally, derived classes cannot call these)
@@ -140,6 +156,8 @@ namespace ECS
 		// PROTECTED MEMBER VARIABLES
 		// (derived classes cannot directly access these)
 		*/
+
+    	EntityManager* entityManager = nullptr;
 
     	// What unique index this Component has.
     	// So that we can do quick Entity lookups like:

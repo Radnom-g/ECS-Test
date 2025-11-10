@@ -26,8 +26,16 @@ namespace ECS
 
     struct Entity
     {
+        Entity(int _entityIndex, int _newUniqueId)
+            :index(_entityIndex), uniqueId(_newUniqueId)
+        {
+        }
+        Entity() = default;
+        Entity(const Entity& _entity)
+            : index(_entity.index), uniqueId(_entity.uniqueId){}
         int index = -1;
         int uniqueId = -1;
+        bool IsValid() const { return index != -1 && uniqueId != -1; }
     };
 
     // The EntityManager is where we can access, create and kill Entities.
@@ -42,22 +50,25 @@ namespace ECS
         // Deactivates all the entities.
         void ResetAll();
 
-        Entity ActivateEntity(const char* _name, int _parentId = -1);
-        bool DeactivateEntity(const Entity& entity);
+        Entity GetEntity(int _entityIndex);
+        Entity ActivateEntity(const char* _name);
+        Entity ActivateEntity(const char* _name, const Entity& _parent);
 
-        EEntityState GetState(const Entity& entity) const
+        bool DeactivateEntity(const Entity& _entity);
+
+        EEntityState GetState(const Entity& _entity) const
         {
-            if (entity.index < 0 || entity.index >= currentCapacity)
+            if (_entity.index < 0 || _entity.index >= currentCapacity)
             {
                 // Not a valid index.
                 return EEntityState::Invalid;
             }
 
             // ID has been reused.
-            if (uniqueId[entity.index] != entity.uniqueId)
+            if (uniqueId[_entity.index] != _entity.uniqueId)
                 return EEntityState::Dead;
 
-            return state[entity.index];
+            return state[_entity.index];
         }
 
         const std::string& GetName(const Entity& entity)
@@ -80,16 +91,14 @@ namespace ECS
         //     return (componentIds[entity.index][_componentId]);
         // }
 
+        inline static const Entity InvalidEntity;
+
     private:
+
         // Finds an inactive entity in the list to activate
         int GetNextInactiveEntityIndex();
 
         void SetCapacity(int _newCapacity);
-
-        // Don't expose this one, this deletes an Entity not caring about its index.
-        // Other classes should make sure they're deactivating the right entity by passing in the Entity struct
-        // that also checks the Unique ID.
-        bool DeactivateEntity(int _entityIndex);
 
         bool isInitialised = false;
 

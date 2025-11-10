@@ -51,8 +51,7 @@ namespace ECS
             return parentId[treeComp];
         }
 
-        void AddChild(const Entity& _parent, const Entity& _child) { AddChild(_parent.index, _child.index); }
-        void AddChild(int _entityParent, int _entityChild);
+        void AddChild(const Entity& _parent, const Entity& _child);
         void RemoveChild(int _entityParent, int _entityChild);
 
         [[nodiscard]] int GetTreeDepth(int _entity) const

@@ -10,6 +10,7 @@ namespace ECS
     class World;
     class EntityManager;
     class ComponentManager;
+    class SystemManager;
 
     struct WorldContext
     {
@@ -19,5 +20,6 @@ namespace ECS
         EntityManager* entityManager = nullptr;
         ComponentManager* componentManager = nullptr;
         WorldSettings* worldSettings = nullptr;
+        SystemManager* systemManager = nullptr;
     };
 } // ECS

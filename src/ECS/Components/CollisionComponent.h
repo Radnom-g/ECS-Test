@@ -8,21 +8,49 @@
 
 namespace ECS
 {
-    enum ECollisionType
+    namespace ECollision
     {
-        Ignore,
-        Overlap,
-        Collision,
-    };
+        enum class ResponseType : unsigned char
+        {
+            Ignore          = 0,
+            Overlap         = 1 << 0,
+            Collision       = 1 << 1,
+        };
+
+        inline ResponseType operator|(ResponseType a, ResponseType b) {
+            return static_cast<ResponseType>(
+                static_cast<unsigned char>(a) | static_cast<unsigned char>(b)
+            );
+        }
+        inline ResponseType operator&(ResponseType a, ResponseType b) {
+            return static_cast<ResponseType>(
+                static_cast<unsigned char>(a) & static_cast<unsigned char>(b)
+            );
+        }
+        inline ResponseType operator~(ResponseType a) {
+            return static_cast<ResponseType>(~static_cast<unsigned char>(a));
+        }
+
+        enum ColliderType
+        {
+            None,
+            Circle,             // Circle collider
+            SpriteAABB,         // AABB rect collider
+            SpriteBounds,       // Rotated rect based on Sprite
+            SpritePixelPerfect, // Rotated rect based on sprite, comparing pixels
+            GridPos,            // Takes up one grid square
+        };
+    }
 
     typedef uint32_t CollisionFlags;
 
     class CollisionComponent : public IComponent
     {
     public:
+        friend class CollisionSystem;
 
-        void SetCollisionType( int _componentIndex, ECollisionType _collisionType) { colliderResponse[_componentIndex] = _collisionType; }
-        ECollisionType GetCollisionType( int _componentIndex) { return colliderResponse[_componentIndex]; }
+        void SetCollisionResponseType( int _componentIndex, ECollision::ResponseType _collisionType) { colliderResponse[_componentIndex] = _collisionType; }
+        ECollision::ResponseType GetCollisionResponseType( int _componentIndex) { return colliderResponse[_componentIndex]; }
 
         void AddCategoryFlags( int _componentIndex, CollisionFlags _flags) { categoryFlag[_componentIndex] |= _flags; }
         void RemoveCategoryFlags( int _componentIndex, CollisionFlags _flags) { categoryFlag[_componentIndex] &= ~_flags; }
@@ -39,7 +67,7 @@ namespace ECS
         void SetOverlapFlags( int _componentIndex, CollisionFlags _flags) { overlapFlag[_componentIndex] = _flags; }
         CollisionFlags GetOverlapFlags( int _componentIndex) { return overlapFlag[_componentIndex]; }
 
-        ECollisionType GetOverlapResult( int _componentIndexThis, int _componentIndexOther);
+        ECollision::ResponseType GetOverlapResult( int _componentIndexThis, int _componentIndexOther);
 
         [[nodiscard]] const char* GetName() const override { return "CollisionComponent"; }
         [[nodiscard]] bool IsUniquePerEntity() const override { return true; }
@@ -56,7 +84,7 @@ namespace ECS
         // if set to ignore, nothing will detect collisions with it.
         // if set to overlap, other components can overlap, but not collide with it.
         // if set to collision, other components can collide with it.
-        std::vector<ECollisionType> colliderResponse{};
+        std::vector<ECollision::ResponseType> colliderResponse{};
 
         // Flags of what we 'are'
         std::vector<uint32_t> categoryFlag{};

@@ -52,8 +52,8 @@ namespace Grid
         grid->inv_cell_h = 1.0f / cell_w;
         grid->x = left;
         grid->y = top;
-        grid->h = w;
-        grid->w = h;
+        grid->h = h;
+        grid->w = w;
         grid->element_radius = element_radius;
 
         grid->rows = new UGridRow[num_rows];
@@ -216,7 +216,7 @@ namespace Grid
                 {
                     const UGridElement* elt = &row->elements[elt_idx];
                     if (elt_idx != omit_id && fabs(mx - elt->mx) <= fx && fabs(my - elt->my) <= fy)
-                        res.push_back(elt_idx);
+                        res.push_back(elt->id);
                     elt_idx = row->elements[elt_idx].next;
                 }
             }
@@ -231,6 +231,59 @@ namespace Grid
         const float x1 = mx-grid->element_radius, y1 = my-grid->element_radius;
         const float x2 = mx+grid->element_radius, y2 = my+grid->element_radius;
         return x1 >= 0.0f && x2 < grid->w && y1 >= 0.0f && y2 < grid->h;
+    }
+
+    void ugrid_get_rect(UGrid* grid, float mx, float my, float &x, float &y, float &w, float &h )
+    {
+        const int cell_x = ugrid_cell_x(grid, mx);
+        const int cell_y = ugrid_cell_y(grid, my);
+
+        x = grid->x + static_cast<float>(cell_x) * (1.0f/grid->inv_cell_w);
+        y = grid->y + static_cast<float>(cell_y) * (1.0f/grid->inv_cell_w);
+        w = 1.0f/grid->inv_cell_w;
+        h = 1.0f/grid->inv_cell_h;
+    }
+
+    /*
+    *       // Stores all the rows in the grid.
+    UGridRow* rows;
+
+    // Stores the number of columns, rows, and cells in the grid.
+    int num_cols, num_rows, num_cells;
+
+    // Stores the inverse size of a cell.
+    float inv_cell_w, inv_cell_h;
+
+    // Stores the half-size of all elements stored in the grid.
+    float element_radius;
+
+    // Stores the upper-left corner of the grid.
+    float x, y;
+
+    // Stores the size of the grid.
+    float w, h;
+    */
+    // for debugging...
+    void ugrid_get_contents(UGrid* grid, SmallList<int>& _outContents, SmallList<int>& _outGridX, SmallList<int>& _outGridY)
+    {
+        for (int y = 0; y < grid->num_rows; ++y)
+        {
+            const UGridRow* row = &grid->rows[y];
+            for (int x = 0; x < grid->num_cols; ++x)
+            {
+                int elt_idx = row->cells[x];
+                while (elt_idx != -1)
+                {
+                    const UGridElement* elt = &row->elements[elt_idx];
+
+                    _outContents.push_back(elt->id);
+                    _outGridX.push_back(x);
+                    _outGridY.push_back(y);
+
+                    elt_idx = row->elements[elt_idx].next;
+                }
+            }
+        }
     }
 
     void ugrid_optimize(UGrid* grid)

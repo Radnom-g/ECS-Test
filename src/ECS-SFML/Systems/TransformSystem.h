@@ -5,13 +5,14 @@
 #pragma once
 #include <vector>
 
+#include "../Components/TransformComponent.h"
 #include "Systems/ISystem.h"
 #include "../ECS-SFML/Components/Transform.h"
-#include "../External/UGrid.h"
 
 
 namespace ECS
 {
+    class CollisionComponent;
     class EntityManager;
     class TreeComponent;
 }
@@ -26,15 +27,20 @@ namespace ECS_SFML
     {
     public:
         static constexpr std::string SystemName = "TransformSystem";
+
         bool Initialise(SFMLWorldContext* _context);
 
-        ~TransformSystem() override;
+        // Creates a transform based on the position between last physics frame and the current based on the
+        // delta passed in.
+        [[nodiscard]] Transform GetLerpEntityWorldTransform(int _entityId, float _frameDelta) const;
+        [[nodiscard]] Transform GetLerpWorldTransform(int _transformComponentIndex, float _frameDelta) const;
 
-        [[nodiscard]] Transform GetEntityWorldTransform(int _entityId, float _frameDelta);
-        [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex, float _frameDelta);
-
-        [[nodiscard]] Transform GetEntityWorldTransform(int _entityId );
-        [[nodiscard]] Transform GetWorldTransform(int _transformComponentIndex );
+        // Returns a reference to the up-to-date physics transform cache
+        sf::Vector2f GetEntityWorldPosition(int _entityId ) const;
+        [[nodiscard]] const Transform& GetEntityWorldTransform(int _entityId ) const;
+        [[nodiscard]] const Transform& GetWorldTransform(int _transformComponentIndex ) const;
+        bool HasCachedEntityWorldTransform(int _entityId) const;
+        bool HasCachedWorldTransform(int _transformComponentIndex) const;
 
         // to be called in process tick, these setters will go DOWN the tree and update cached transforms.
         // Intended for systems that process after TransformSystem (most of them).
@@ -53,6 +59,16 @@ namespace ECS_SFML
         void MarkEntityAsTeleported(int _entityId);
         bool HasEntityTeleportedThisFrame(int _entityId);
         bool HasTransformTeleportedThisFrame(int _transformComponentIndex);
+        inline bool HasEntityMovedThisFrame(int _entityId)
+        {
+            int compInd = transformComponent->GetComponentIndex(_entityId);
+            if (compInd >= 0 && compInd < translationMovedThisTick.size())
+            {
+                return translationMovedThisTick[transformComponent->GetComponentIndex(_entityId)];
+            }
+            return false;
+        }
+        inline bool HasTransformMovedThisFrame(int _transformComponentIndex) { return translationMovedThisTick[_transformComponentIndex]; }
 
     protected:
         // Get the transform's parent transform by going up the Tree to find parent Transforms.
@@ -67,7 +83,7 @@ namespace ECS_SFML
         void RenderInternal(float _deltaTween) override {}
 
         // Perhaps if we add a TreeSystem, add it in here. Otherwise, transform should happen first.
-        void GetProcessAfter(std::vector<std::string> &_outSystems) override {}
+        void GetProcessAfter(std::vector<std::string> &_outSystems) override;
         void GetRenderAfter(std::vector<std::string> &_outSystems) override {}
 
         inline const std::string& GetSystemName() override { return SystemName; }
@@ -78,9 +94,12 @@ namespace ECS_SFML
 
         void ResizeCache();
 
+        Transform identityTransform;
+
         ECS::EntityManager* entityManager = nullptr;
         TransformComponent* transformComponent = nullptr;
         ECS::TreeComponent* treeComponent = nullptr;
+        ECS::CollisionComponent* collisionComponent = nullptr;
 
         std::vector<Transform> cachedTransform{};
         std::vector<Transform> cachedTransformPrev{};
@@ -90,11 +109,10 @@ namespace ECS_SFML
         // To make sure we don't have one frame of something snapping to position
         std::vector<bool> transformPrevCacheSet;
 
+        // so that other systems can see if the translation has moved + recached.
+        std::vector<bool> translationMovedThisTick;
+
         // This is so that we can set the 'prev' as well if it's brand new
         int cachedTransformSize = 0;
-
-        // As the Transform controls how things move, it should also contain and upgrade the Grid used for collision.
-        // The CollisionSystem itself can actually act on this, but it's better to maintain it in here.
-        Grid::UGrid* grid = nullptr;
     };
 } // ECS_SFML

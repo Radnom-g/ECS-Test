@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cassert>
 
+#include "Worlds/WorldContext.h"
+
 namespace ECS
 {
     bool IComponent::InitialiseComponent(WorldContext *context, int _componentId, int _initialCapacity, int _maxCapacity)
@@ -17,6 +19,8 @@ namespace ECS
             return false;
         }
 
+        entityManager = context->entityManager;
+
         componentId = _componentId;
         isInitialised = true;
 
@@ -26,46 +30,71 @@ namespace ECS
         return InitialiseInternal(context, _initialCapacity, _maxCapacity);
     }
 
-    int IComponent::AddComponent(int _entityId)
+    int IComponent::AddComponent(const Entity &_entity)
     {
         if (IsUniquePerEntity())
         {
             // If we can only have one, and we already have one, return it
-            if (HasComponent(_entityId))
-                return GetComponentIndex(_entityId);
+            if (HasComponent(_entity.index))
+                return GetComponentIndex(_entity.index);
         }
 
         int componentIndex = GetNextInactiveComponent();
         if (componentIndex != -1)
         {
-            entityId[componentIndex] = _entityId;
-            entityComponents[_entityId].push_back(componentIndex);
-            AddComponentInternal(_entityId, componentIndex);
+            entityId[componentIndex] = _entity.index;
+            entityComponents[_entity.index].push_back(componentIndex);
+            AddComponentInternal(_entity.index, componentIndex);
             nextIndex++;
             entityListDirty = true;
+
+            for (auto& del : componentAddedDelegates)
+            {
+                del(_entity, componentIndex);
+            }
         }
 
         return componentIndex;
     }
 
-    void IComponent::RemoveComponentsFromEntity(int _entityId)
+    void IComponent::RemoveComponentsFromEntity(const Entity &_entity)
     {
         // Make a copy as RemoveComponent will also remove from the original entityComponents List.
-        IndexList listCopy(entityComponents[_entityId]);
+        IndexList listCopy(entityComponents[_entity.index]);
 
         for (int _ind = 0; _ind < listCopy.size(); _ind++)
         {
-            RemoveComponent(_ind);
+            RemoveComponentByIndex(_entity, _ind);
         }
 
         // we SHOULD have removed components, but just in case.
-        entityComponents[_entityId].clear();
+        entityComponents[_entity.index].clear();
     }
 
-    void IComponent::RemoveComponent(int _componentIndex)
+    void IComponent::RemoveComponentByIndex(int _componentIndex)
+    {
+        int entityIndex = entityId[_componentIndex];
+        Entity entity = entityManager->GetEntity(entityIndex);
+        if (entity.IsValid())
+        {
+            RemoveComponentByIndex(entity, _componentIndex);
+        }
+    }
+
+    void IComponent::RemoveComponentByIndex(const Entity &_entity, int _componentIndex)
     {
         if (_componentIndex == -1)
             return;
+
+        if (!_entity.IsValid())
+            return;
+
+        // Call delegates first so they have time to get any data out that they might need
+        // for their own cleanup.
+        for (auto& del : componentRemovedDelegates)
+        {
+            del(_entity, _componentIndex);
+        }
 
         // Call internal first, in case it relies on 'entityIdComponentIndex' or similar.
         RemoveComponentInternal(_componentIndex);
@@ -108,6 +137,10 @@ namespace ECS
             {
                 iter = _entityListFilter.erase(iter);
             }
+            else
+            {
+                ++iter;
+            }
         }
     }
 
@@ -121,6 +154,16 @@ namespace ECS
                 iter = _entityListFilter.erase(iter);
             }
         }
+    }
+
+    void IComponent::RegisterOnAddComponent(ComponentAddedDelegate _delegate)
+    {
+        componentAddedDelegates.push_back(_delegate);
+    }
+
+    void IComponent::RegisterOnRemoveComponent(ComponentRemovedDelegate _delegate)
+    {
+        componentRemovedDelegates.push_back(_delegate);
     }
 
     void IComponent::ClearComponentAtIndex(int _componentIndex)

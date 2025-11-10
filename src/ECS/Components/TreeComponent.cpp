@@ -6,40 +6,41 @@
 
 namespace ECS
 {
-    void TreeComponent::AddChild(int _entityParent, int _entityChild)
+
+    void TreeComponent::AddChild(const Entity &_parent, const Entity &_child)
     {
-        int parCompInd = GetComponentIndex(_entityParent);
+        int parCompInd = GetComponentIndex(_parent.index);
         if ( parCompInd == -1)
         {
-            parCompInd = AddComponent(_entityParent);
+            parCompInd = AddComponent(_parent);
         }
 
-        int childCompInd = GetComponentIndex(_entityChild);
+        int childCompInd = GetComponentIndex(_child.index);
         if (childCompInd == -1)
         {
-            childCompInd = AddComponent(_entityChild);
+            childCompInd = AddComponent(_child);
         }
 
-        if (parentId[childCompInd] == _entityParent)
+        if (parentId[childCompInd] == _parent.index)
             return; // assume this is already set up.
 
         if (parentId[childCompInd] != -1)
         {
             // already assigned to a different parent?
-            RemoveChild(parentId[childCompInd], _entityChild);
+            RemoveChild(parentId[childCompInd], _child.index);
         }
 
         // Set parent of child.
-        parentId[childCompInd] = _entityParent;
+        parentId[childCompInd] = _parent.index;
 
         // check that it doesn't already have this child.
        IndexList& childList = childrenIds[parCompInd];
 
-        if (childList.find_index(_entityChild) == -1)
+        if (childList.find_index(_child.index) == -1)
         {
-            childList.push_back(_entityChild);
+            childList.push_back(_child.index);
         }
-        SetTreeDepth(_entityChild, treeDepth[parCompInd]);
+        SetTreeDepth(_child.index, treeDepth[parCompInd]);
     }
 
     void TreeComponent::RemoveChild(int _entityParent, int _entityChild)

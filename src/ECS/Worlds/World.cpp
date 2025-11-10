@@ -6,6 +6,7 @@
 
 #include "WorldContext.h"
 #include "../Entities/EntityManager.h"
+#include "Components/CollisionComponent.h"
 #include "Components/TreeComponent.h"
 
 namespace ECS
@@ -56,12 +57,16 @@ namespace ECS
 
     void World::Update(float _deltaSeconds)
     {
-        UpdateInternal(_deltaSeconds);
+        UpdateInternalEarly(_deltaSeconds);
+        systemManager.Process(_deltaSeconds);
+        UpdateInternalLate(_deltaSeconds);
     }
 
     void World::Render(float _deltaTween)
     {
-        RenderInternal(_deltaTween);
+        RenderInternalEarly(_deltaTween);
+        systemManager.Render(_deltaTween);
+        RenderInternalLate(_deltaTween);
     }
 
     WorldContext* World::GetWorldContext() const
@@ -76,6 +81,7 @@ namespace ECS
         worldContext->entityManager = &entityManager;
         worldContext->componentManager = &componentManager;
         worldContext->worldSettings = worldSettings;
+        worldContext->systemManager = &systemManager;
     }
 
     void World::CreateAndRegisterComponents()
@@ -83,6 +89,9 @@ namespace ECS
         // TODO: use the WorldSettings to initialise capacity values
         ECS::ComponentSettings treeSettings = ECS::TreeComponent::CreateSettings<ECS::TreeComponent>(1000, 100000);
         worldSettings->ComponentSettings.push_back(treeSettings);
+
+        ECS::ComponentSettings collisionSettings = ECS::CollisionComponent::CreateSettings<ECS::CollisionComponent>(1000, 100000);
+        worldSettings->ComponentSettings.push_back(collisionSettings);
 
         // Derived Worlds can add more Components here
         CreateAndRegisterComponentsInternal();

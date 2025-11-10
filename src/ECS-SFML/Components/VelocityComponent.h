@@ -15,16 +15,18 @@ namespace ECS_SFML
 
         ~VelocityComponent() override = default;
 
-        [[nodiscard]] sf::Vector2f GetVelocity (int _componentIndex) const { return velocity[_componentIndex]; }
-        [[nodiscard]] sf::Vector2f GetAcceleration (int _componentIndex) const { return acceleration[_componentIndex]; }
-        [[nodiscard]] sf::Vector2f GetFriction (int _componentIndex) const { return friction[_componentIndex]; }
+        [[nodiscard]] const sf::Vector2f& GetVelocity (int _componentIndex) const { return velocity[_componentIndex]; }
+        [[nodiscard]] const sf::Vector2f& GetAcceleration (int _componentIndex) const { return acceleration[_componentIndex]; }
+        [[nodiscard]] float GetFriction (int _componentIndex) const { return friction[_componentIndex]; }
+        [[nodiscard]] float GetMaxSpeed (int _componentIndex) const { return maxSpeed[_componentIndex]; }
 
         void SetVelocity(int _componentIndex, const sf::Vector2f& _velocity) { velocity[_componentIndex] = _velocity; }
         void SetAcceleration(int _componentIndex, const sf::Vector2f& _acceleration) { acceleration[_componentIndex] = _acceleration; }
-        void SetFriction(int _componentIndex, const sf::Vector2f& _friction) { friction[_componentIndex] = _friction; }
+        void SetFriction(int _componentIndex, float _friction) { friction[_componentIndex] = _friction; }
+        void SetMaxSpeed(int _componentIndex, float _maxSpeed) { maxSpeed[_componentIndex] = _maxSpeed; }
 
         [[nodiscard]] const char* GetName() const override { return "VelocityComponent"; }
-        [[nodiscard]] bool IsUniquePerEntity() const override { return false; }
+        [[nodiscard]] bool IsUniquePerEntity() const override { return true; }
 
     protected:
         bool InitialiseInternal(ECS::WorldContext* context, int _initialCapacity, int _maxCapacity) override;
@@ -37,7 +39,8 @@ namespace ECS_SFML
         // Component data:
         std::vector<sf::Vector2f> velocity{};
         std::vector<sf::Vector2f> acceleration{};
-        std::vector<sf::Vector2f> friction{};
+        std::vector<float> friction{};
+        std::vector<float> maxSpeed{}; // -1 is no max speed.
 
     };
 } // ECS_SFML

@@ -71,6 +71,9 @@ add_executable(ECSTest src/main.cpp
         src/External/IndexList.h
         src/ECS/Systems/SystemManager.cpp
         src/ECS/Systems/SystemManager.h
+        src/External/Collision.cpp
+        src/External/Collision.h
+        src/External/Collision.h
 )
 target_include_directories(ECSTest PRIVATE src/ECS)
 target_compile_features(ECSTest PRIVATE cxx_std_17)

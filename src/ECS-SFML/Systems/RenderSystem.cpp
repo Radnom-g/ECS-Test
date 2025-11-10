@@ -37,8 +37,59 @@ namespace ECS_SFML
         assert(transformSystem != nullptr && "RenderSystem::Initialise transformSystem is null.");
         assert(spriteComponent != nullptr && "RenderSystem::Initialise spriteComponent is null.");
 
+        identityTransform = Transform::Identity();
+
         isInitialised = true;
         return true;
+    }
+
+    const Transform& RenderSystem::GetLocalSpriteTransform(int _spriteComponentIndex)
+    {
+        if (_spriteComponentIndex < 0 || _spriteComponentIndex >= cachedSpriteTransform.size())
+        {
+            return identityTransform;
+        }
+
+        if (spriteComponent->dirty[_spriteComponentIndex] || !hasCachedLocalSpriteTransform[_spriteComponentIndex] )
+        {
+            sf::Vector2f origin{};
+            sf::Sprite* sprite = resourceManager->GetSprite(spriteComponent->spriteId[_spriteComponentIndex]);
+            if (sprite)
+            {
+                // origin.x = (spriteComponent->relativeOrigin[_spriteComponentIndex].x * static_cast<float>( sprite->getTexture().getSize().x ));
+                // origin.y = (spriteComponent->relativeOrigin[_spriteComponentIndex].y * static_cast<float>( sprite->getTexture().getSize().y ));
+            }
+            Transform transform;
+            transform.setOrigin(origin);
+            transform.setPosition(spriteComponent->position[_spriteComponentIndex]);
+            transform.setScale(spriteComponent->scale[_spriteComponentIndex]);
+            transform.setRotation(sf::degrees(spriteComponent->rotation[_spriteComponentIndex]));
+            cachedLocalSpriteTransform[_spriteComponentIndex] = transform;
+            hasCachedLocalSpriteTransform[_spriteComponentIndex] = true;
+        }
+
+        return cachedLocalSpriteTransform[_spriteComponentIndex];
+    }
+
+    const Transform & RenderSystem::GetWorldSpriteTransform(int _spriteComponentIndex)
+    {
+        if (_spriteComponentIndex < 0 || _spriteComponentIndex >= cachedSpriteTransform.size())
+        {
+            return identityTransform;
+        }
+
+        if (hasCachedGlobalSpriteTransform[_spriteComponentIndex])
+        {
+            return cachedSpriteTransform[_spriteComponentIndex];
+        }
+
+        int entity = spriteComponent->entityId[_spriteComponentIndex];
+        const Transform& tEnt = transformSystem->GetEntityWorldTransform(entity);
+        const Transform& tLocal = GetLocalSpriteTransform(_spriteComponentIndex);
+        Transform tSpr = Transform::GetAppliedTransform(tEnt, tLocal);
+        SetSpriteGlobalTransformCache(_spriteComponentIndex, tSpr);
+
+        return cachedSpriteTransform[_spriteComponentIndex];
     }
 
     void RenderSystem::ProcessInternal(float _deltaTick)
@@ -49,9 +100,11 @@ namespace ECS_SFML
         int newSize = spriteComponent->GetArraySize();
         if (newSize > prevSize)
         {
+            cachedLocalSpriteTransform.resize(newSize);
             cachedSpriteTransform.resize(newSize);
             cachedSpriteTransformPrev.resize(newSize);
-            hasCachedSpriteTransform.resize(newSize, false);
+            hasCachedGlobalSpriteTransform.resize(newSize, false);
+            hasCachedLocalSpriteTransform.resize(newSize, false);
         }
 
         std::vector<bool>& spriteCompsActive = spriteComponent->visible;
@@ -59,17 +112,20 @@ namespace ECS_SFML
         {
             if (spriteCompsActive[sCompInd])
             {
-                bool bTeleported = false;
-                cachedSpriteTransform[sCompInd] = CalculateCachedSpriteTransform(sCompInd, bTeleported);
-                if (bTeleported || !hasCachedSpriteTransform[sCompInd])
+                // This is to cache it if necessary
+                bool bNeedsCache = !transformSystem->HasEntityMovedThisFrame(spriteComponent->entityId[sCompInd]);
+                bNeedsCache |= spriteComponent->dirty[sCompInd];
+
+                if (bNeedsCache)
                 {
-                    cachedSpriteTransformPrev[sCompInd] = cachedSpriteTransform[sCompInd];
+                    hasCachedGlobalSpriteTransform[sCompInd] = false;
+                    GetWorldSpriteTransform(sCompInd);
+                    hasCachedGlobalSpriteTransform[sCompInd] = true;
                 }
-                hasCachedSpriteTransform[sCompInd] = true;
             }
             else
             {
-                hasCachedSpriteTransform[sCompInd] = false;
+                hasCachedGlobalSpriteTransform[sCompInd] = false;
             }
         }
     }
@@ -110,7 +166,7 @@ namespace ECS_SFML
                         // tSpr = Transform::GetAppliedTransform(tEnt, tSpr);
 
                         // Can't render without a cached sprite transform.
-                        if (hasCachedSpriteTransform.size() > spriteComp && hasCachedSpriteTransform[spriteComp])
+                        if (hasCachedGlobalSpriteTransform.size() > spriteComp && hasCachedGlobalSpriteTransform[spriteComp])
                         {
                             Transform tSpr = Transform::Lerp(cachedSpriteTransformPrev[spriteComp], cachedSpriteTransform[spriteComp], _deltaTween);
 
@@ -185,15 +241,15 @@ namespace ECS_SFML
         depthMapDirty = false;
     }
 
-    Transform RenderSystem::CalculateCachedSpriteTransform(int _spriteCompIndex, bool& _outHasTeleported)
+    void RenderSystem::SetSpriteGlobalTransformCache(int _spriteCompIndex, const Transform &_worldTransform)
     {
         int entity = spriteComponent->entityId[_spriteCompIndex];
-
-        Transform tEnt = transformSystem->GetEntityWorldTransform(entity, 1);
-        Transform tSpr = spriteComponent->CreateLocalTransform(_spriteCompIndex);
-        tSpr = Transform::GetAppliedTransform(tEnt, tSpr);
-
-        _outHasTeleported = transformSystem->HasEntityTeleportedThisFrame(entity);
-        return tSpr;
+        bool bHasTeleported = transformSystem->HasEntityTeleportedThisFrame(entity);
+        cachedSpriteTransform[_spriteCompIndex] = _worldTransform;
+        if (bHasTeleported || !hasCachedGlobalSpriteTransform[_spriteCompIndex])
+        {
+            cachedSpriteTransformPrev[_spriteCompIndex] = cachedSpriteTransform[_spriteCompIndex];
+        }
+        hasCachedGlobalSpriteTransform[_spriteCompIndex] = true;
     }
 } // ECS_SFML

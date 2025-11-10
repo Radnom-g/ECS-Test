@@ -30,8 +30,10 @@ namespace ECS_SFML
         void CreateAndRegisterComponentsInternal() override;
         void InitialiseComponents() override;
         void ReinitialiseInternal() override;
-        void UpdateInternal(float _deltaSeconds) override;
-        void RenderInternal(float _deltaTween) override;
+        void UpdateInternalEarly(float _deltaSeconds) override;
+        void UpdateInternalLate(float _deltaSeconds) override;
+        void RenderInternalEarly(float _deltaTween) override;
+        void RenderInternalLate(float _deltaTween) override;
 
     protected:
         ECS_SFML::SFMLWorldContext* worldContextSFML = nullptr;
@@ -41,5 +43,6 @@ namespace ECS_SFML
         ECS_SFML::RenderSystem renderSystem;
         ECS_SFML::MovementSystem movementSystem;
         ECS_SFML::ResourceManager resourceManager;
+        ECS_SFML::CollisionSystem collisionSystem;
     };
 } // ECS_SFML

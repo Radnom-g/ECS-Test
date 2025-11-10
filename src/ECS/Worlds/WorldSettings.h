@@ -20,11 +20,11 @@ namespace ECS
         int entityCapacityInitial = 1000;
         int entityCapacityMax = 100000;
 
-        unsigned int worldWidth = 320;
-        unsigned int worldHeight = 256;
+        unsigned int worldWidth = 1920;
+        unsigned int worldHeight = 1080;
 
-        unsigned int tileGridWidth = 32;
-        unsigned int tileGridHeight = 32;
+        unsigned int tileGridWidth = 16;
+        unsigned int tileGridHeight = 16;
 
         // Info about what Components are in this world, how to construct them, and how many component instances
         // they support.

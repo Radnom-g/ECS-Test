@@ -35,10 +35,17 @@ namespace ECS_SFML
         worldContextSFML->transformSystem = &transformSystem;
         worldContextSFML->renderSystem = &renderSystem;
         worldContextSFML->movementSystem = &movementSystem;
+        worldContextSFML->collisionSystem = &collisionSystem;
 
         transformSystem.Initialise(worldContextSFML);
         renderSystem.Initialise(worldContextSFML);
         movementSystem.Initialise(worldContextSFML);
+        collisionSystem.Initialise(worldContextSFML);
+
+        systemManager.RegisterSystem(&transformSystem);
+        systemManager.RegisterSystem(&renderSystem);
+        systemManager.RegisterSystem(&movementSystem);
+        systemManager.RegisterSystem(&collisionSystem);
 
     }
 
@@ -84,17 +91,23 @@ namespace ECS_SFML
         World::ReinitialiseInternal();
     }
 
-    void SFMLWorld::UpdateInternal(float _deltaSeconds)
+    void SFMLWorld::UpdateInternalEarly(float _deltaSeconds)
     {
-        World::UpdateInternal(_deltaSeconds);
-        transformSystem.Process(_deltaSeconds);
-        movementSystem.Process(_deltaSeconds);
-        renderSystem.Process(_deltaSeconds);
+        World::UpdateInternalEarly(_deltaSeconds);
     }
 
-    void SFMLWorld::RenderInternal(float _deltaTween)
+    void SFMLWorld::UpdateInternalLate(float _deltaSeconds)
     {
-        World::RenderInternal(_deltaTween);
-        renderSystem.Render(_deltaTween);
+        World::UpdateInternalLate(_deltaSeconds);
+    }
+
+    void SFMLWorld::RenderInternalEarly(float _deltaTween)
+    {
+        World::RenderInternalEarly(_deltaTween);
+    }
+
+    void SFMLWorld::RenderInternalLate(float _deltaTween)
+    {
+        World::RenderInternalLate(_deltaTween);
     }
 } // ECS_SFML

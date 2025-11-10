@@ -6,9 +6,11 @@
 
 #include <debugapi.h>
 
+#include "CollisionSystem.h"
 #include "../Worlds/SFMLWorldContext.h"
 #include "Components/ComponentManager.h"
 #include "../ECS-SFML/Components/TransformComponent.h"
+#include "Components/CollisionComponent.h"
 #include "Components/TreeComponent.h"
 #include "Entities/EntityManager.h"
 
@@ -25,42 +27,27 @@ namespace ECS_SFML
 
         transformComponent = _context->componentManager->GetComponent<TransformComponent>();
         treeComponent = _context->componentManager->GetComponent<ECS::TreeComponent>();
+        collisionComponent = _context->componentManager->GetComponent<ECS::CollisionComponent>();
         entityManager = _context->entityManager;
 
         isInitialised = true;
 
-        float tileWidth = static_cast<float>(_context->worldSettings->tileGridWidth);
-        float tileHeight = static_cast<float>(_context->worldSettings->tileGridHeight);
-        float gridWidth = static_cast<float>(_context->worldSettings->worldWidth);
-        float gridHeight = static_cast<float>(_context->worldSettings->worldHeight);
-
-        float averageEntityRadius = static_cast<float>(_context->worldSettings->tileGridWidth) * 0.5f;
-
-        grid = Grid::ugrid_create(averageEntityRadius, tileWidth, tileHeight, 0, 0, gridWidth, gridHeight);
+        identityTransform = Transform::Identity();
 
         return true;
     }
 
-    TransformSystem::~TransformSystem()
-    {
-        if (grid != nullptr)
-        {
-            delete grid;
-            grid = nullptr;
-        }
-    }
-
-    Transform TransformSystem::GetEntityWorldTransform(int _entityId, float _frameDelta)
+    Transform TransformSystem::GetLerpEntityWorldTransform(int _entityId, float _frameDelta) const
     {
         int transformInd = transformComponent->GetComponentIndex(_entityId);
         if (transformInd != -1)
         {
-            return GetWorldTransform(transformInd, _frameDelta);
+            return GetLerpWorldTransform(transformInd, _frameDelta);
         }
-        return Transform::Identity();
+        return identityTransform;
     }
 
-    Transform TransformSystem::GetWorldTransform(int _transformComponentIndex, float _frameDelta)
+    Transform TransformSystem::GetLerpWorldTransform(int _transformComponentIndex, float _frameDelta) const
     {
         if (_transformComponentIndex < cachedTransform.size())
         {
@@ -69,23 +56,41 @@ namespace ECS_SFML
         return transformComponent->CreateLocalTransform(_transformComponentIndex);
     }
 
-    Transform TransformSystem::GetEntityWorldTransform(int _entityId)
+    sf::Vector2f TransformSystem::GetEntityWorldPosition(int _entityId) const
+    {
+        return GetEntityWorldTransform(_entityId).getPosition();
+    }
+
+    const Transform& TransformSystem::GetEntityWorldTransform(int _entityId) const
     {
         int transformInd = transformComponent->GetComponentIndex(_entityId);
         if (transformInd != -1)
         {
             return GetWorldTransform(transformInd);
         }
-        return Transform::Identity();
+        return identityTransform;
     }
 
-    Transform TransformSystem::GetWorldTransform(int _transformComponentIndex)
+    const Transform& TransformSystem::GetWorldTransform(int _transformComponentIndex) const
     {
         if (_transformComponentIndex < cachedTransform.size())
         {
             return cachedTransform[_transformComponentIndex];
         }
-        return transformComponent->CreateLocalTransform(_transformComponentIndex);
+        return identityTransform;
+    }
+
+    bool TransformSystem::HasCachedEntityWorldTransform(int _entityId) const
+    {
+        int transformInd = transformComponent->GetComponentIndex(_entityId);
+        return HasCachedEntityWorldTransform(transformInd);
+    }
+
+    bool TransformSystem::HasCachedWorldTransform(int _transformComponentIndex) const
+    {
+        if (_transformComponentIndex < 0 || _transformComponentIndex >= transformPrevCacheSet.size())
+            return false;
+        return (transformPrevCacheSet[_transformComponentIndex]);
     }
 
     // Update an entity transform directly, and affect its children by updating the caches.
@@ -290,6 +295,8 @@ namespace ECS_SFML
         // TODO: We should have a way to get this sorted by tree depth to avoid potentially updating children multiple times.
         for (int tCompInd = 0; tCompInd < transformComponent->entityId.size(); ++tCompInd)
         {
+            translationMovedThisTick[tCompInd] = false;
+
             if (transformNeedsCache[tCompInd])
             {
                 int entity = transformComponent->entityId[tCompInd];
@@ -299,14 +306,29 @@ namespace ECS_SFML
                     transformPrevCacheSet[tCompInd] = false;
                     continue;
                 }
+
+                // Update the cache
+
+                // Find the world of this Parent entity's transform by checking further up the tree until we hit a cache or the top
+                Transform _worldTransform = transformComponent->CreateLocalTransform(tCompInd);
+
+                // Recursion!
+                LocalToWorldTransform(transformComponent->entityId[tCompInd], _worldTransform);
+
+                // Cache it!
+                SetTransformCache(tCompInd, _worldTransform);
+
+                // send it down the chain!
                 CalculateCachedTransformOfChildren(entity, identity);
             }
         }
 
-        if (grid)
-        {
-            Grid::ugrid_optimize(grid);
-        }
+    }
+
+    void TransformSystem::GetProcessAfter(std::vector<std::string> &_outSystems)
+    {
+        _outSystems.clear();
+        _outSystems.push_back( CollisionSystem::SystemName );
     }
 
     void TransformSystem::MarkEntityAsTeleported(int _entityId)
@@ -354,27 +376,28 @@ namespace ECS_SFML
             ResizeCache();
         }
 
+        int entityId = transformComponent->entityId[_transformIndex];
+
         if (!transformPrevCacheSet[_transformIndex])
         {
             cachedTransformPrev[_transformIndex] = _worldTransform;
             transformPrevCacheSet[_transformIndex] = true;
 
-            Grid::ugrid_insert(grid, transformComponent->entityId[_transformIndex], _worldTransform.getPosition().x, _worldTransform.getPosition().y);
         }
         else
         {
             const sf::Vector2f& lastPos = cachedTransform[_transformIndex].getPosition();
             const sf::Vector2f& newPos = _worldTransform.getPosition();
 
-            Grid::ugrid_move(grid, transformComponent->entityId[_transformIndex], lastPos.x,lastPos.y, newPos.x, newPos.y);
         }
 
         cachedTransform[_transformIndex] = _worldTransform;
 
         transformNeedsCache[_transformIndex] = false;
         transformComponent->translationDirty[_transformIndex] = false;
+        translationMovedThisTick[_transformIndex] = true;
 
-        // DEBUG: remove!
+        // DEBUG: logging when something moves.
         // std::stringstream strDebug;
         // strDebug << "Entity #" << transformComponent->entityId[_transformIndex] << " (" << entityManager->GetName(transformComponent->entityId[_transformIndex]) << ")";
         // strDebug << " transform #" << _transformIndex << " ";
@@ -391,5 +414,6 @@ namespace ECS_SFML
         cachedTransformPrev.resize(newSize);
         transformNeedsCache.resize(newSize, true);
         transformPrevCacheSet.resize(newSize, false);
+        translationMovedThisTick.resize(newSize, false);
     }
 } // ECS_SFML

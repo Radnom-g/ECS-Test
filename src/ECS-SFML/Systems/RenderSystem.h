@@ -35,6 +35,11 @@ namespace ECS_SFML
         static constexpr std::string SystemName = "RenderSystem";
         bool Initialise(SFMLWorldContext* _context);
 
+        // This will create + cache if dirty
+        const Transform& GetLocalSpriteTransform(int _spriteComponentIndex);
+        // This will create + cache if dirty
+        const Transform& GetWorldSpriteTransform(int _spriteComponentIndex );
+
     protected:
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override;
@@ -56,19 +61,22 @@ namespace ECS_SFML
         void PopulateDepthEntityMap();
 
 
-        Transform CalculateCachedSpriteTransform(int _spriteCompIndex, bool& _outHasTeleported);
+        void SetSpriteGlobalTransformCache(int _spriteCompIndex, const Transform& _worldTransform);
 
+        Transform identityTransform;
 
-        ResourceManager *resourceManager = nullptr;
+        ResourceManager* resourceManager = nullptr;
         sf::RenderWindow* renderWindow = nullptr;
         TransformSystem* transformSystem = nullptr;
 
         SpriteComponent* spriteComponent = nullptr;
         TransformComponent* transformComponent = nullptr;
 
+        std::vector<Transform> cachedLocalSpriteTransform{};
         std::vector<Transform> cachedSpriteTransform{};
         std::vector<Transform> cachedSpriteTransformPrev{};
-        std::vector<bool> hasCachedSpriteTransform{};
+        std::vector<bool> hasCachedGlobalSpriteTransform{};
+        std::vector<bool> hasCachedLocalSpriteTransform{};
 
         // caching and processing of the Transform's 'depth' value
         bool depthListDirty = true;

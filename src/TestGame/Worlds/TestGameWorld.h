@@ -15,9 +15,12 @@ namespace ECS_Game
         // Like score systems or whatever.
 
         void InitialiseInternal() override;
-        void UpdateInternal(float _deltaSeconds) override;
+        void UpdateInternalEarly(float _deltaSeconds) override;
 
     protected:
         std::vector<ECS::Entity> entitiesToRotate;
+
+        ECS::Entity testPersonEntity;
+        ECS::Entity testTargetEntity;
     };
 } // ECS_Game

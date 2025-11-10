@@ -43,7 +43,7 @@ namespace ECS
 		{
 			if (state[i] != EEntityState::Alive)
 			{
-				DeactivateEntity(i);
+				DeactivateEntity(GetEntity(i));
 			}
 			else
 			{
@@ -52,7 +52,19 @@ namespace ECS
 		}
 	}
 
-	Entity EntityManager::ActivateEntity(const char* _name, int _parentId)
+	Entity EntityManager::GetEntity(int _entityIndex)
+	{
+		if (_entityIndex < 0 || _entityIndex >= uniqueId.size())
+			return (InvalidEntity);
+		return Entity(_entityIndex, uniqueId[_entityIndex]);
+	}
+
+	Entity EntityManager::ActivateEntity(const char *_name)
+	{
+		return ActivateEntity(_name, InvalidEntity);
+	}
+
+	Entity EntityManager::ActivateEntity(const char *_name, const Entity &_parent)
 	{
 		// This will find the next inactive Entity index in our arrays of entities.
 		// If the array is full, then it will resize our arrays up to our max capacity.
@@ -77,51 +89,47 @@ namespace ECS
 		sprintf_s(numstr, "Create Entity[%d]: %s:%d", entityIndex, _name, newUniqueId);
 		OutputDebugString(numstr);
 
-		if (_parentId != -1)
+		Entity newEnt(entityIndex, newUniqueId);
+		if (_parent.IsValid())
 		{
 			TreeComponent* treeComp = componentManager->GetComponent<TreeComponent>();
-			treeComp->AddChild(_parentId, entityIndex);
+			treeComp->AddChild(_parent, newEnt);
 		}
 
-		return Entity(entityIndex, newUniqueId);
+		return newEnt;
 	}
 
-	bool EntityManager::DeactivateEntity(const Entity& entity)
+	bool EntityManager::DeactivateEntity(const Entity& _entity)
 	{
-		if (entity.index < 0 || entity.index >= currentCapacity)
+		if (_entity.index < 0 || _entity.index >= currentCapacity)
 		{
 			// Not a valid index.
 			return false;
 		}
 
-		if (uniqueId[entity.index] != entity.uniqueId)
+		if (uniqueId[_entity.index] != _entity.uniqueId)
 		{
 			// entity doesn't exist any more.
 			return false;
 		}
 
-		if (state[entity.index] != EEntityState::Alive)
+		if (state[_entity.index] != EEntityState::Alive)
 		{
 			// already dead.
 			return false;
 		}
 
 		char numstr[64];
-		sprintf_s(numstr, "Destroy Entity[%d]: %s:%d", entity.index, name[entity.index].c_str(), entity.uniqueId);
+		sprintf_s(numstr, "Destroy Entity[%d]: %s:%d", _entity.index, name[_entity.index].c_str(), _entity.uniqueId);
 		OutputDebugString(numstr);
 
-		return DeactivateEntity(entity.index);
-	}
+		bool bWasAlive = state[_entity.index] == EEntityState::Alive;
 
-	bool EntityManager::DeactivateEntity(int _entityIndex)
-	{
-		bool bWasAlive = state[_entityIndex] == EEntityState::Alive;
+		componentManager->OnEntityDestroyed(_entity);
 
-		componentManager->OnEntityDestroyed(_entityIndex);
-
-		name[_entityIndex] = "Invalid";
-		state[_entityIndex] = EEntityState::Dead;
-		uniqueId[_entityIndex] = -1;
+		name[_entity.index] = "Invalid";
+		state[_entity.index] = EEntityState::Dead;
+		uniqueId[_entity.index] = -1;
 
 		return bWasAlive;
 	}

@@ -12,7 +12,7 @@ namespace ECS
     public:
         ~ComponentManager();
 
-        void OnEntityDestroyed(int _entityId);
+        void OnEntityDestroyed(const Entity& _entity);
 
         void InitialiseComponents(WorldContext* _context);
         void RegisterComponent(ComponentSettings* _componentSettings, IComponent* _component);

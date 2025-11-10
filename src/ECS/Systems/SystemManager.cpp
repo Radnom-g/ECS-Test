@@ -50,120 +50,115 @@ namespace ECS
     {
         processSystemsOrdered.clear();
 
-        int loopBreaker = 1000;
-        bool allPlaced = false;
-
-        while (!allPlaced)
+        // Add processing systems
+        for (int i = 0; i < systems.size(); i++)
         {
-            allPlaced = true;
-            loopBreaker--;
-            if (loopBreaker <= 0)
-            {
-                assert(false && "ERROR!! some kind of requirements loop in Process Systems order requirement");
-                break;
-            }
+            ISystem *system = systems[i];
+            if (!system->GetDoesProcessTick())
+                continue;
+            processSystemsOrdered.push_back(system);
+        }
 
-            for (int i = 0; i < systems.size(); i++)
-            {
-                ISystem *system = systems[i];
-                if (!system->GetDoesProcessTick())
-                    continue;
 
-                bool bContains = false;
-                for (int j = 0; j < systems.size(); j++)
+        bool listSorted = false;
+        int breaker = 500;
+        while (!listSorted)
+        {
+            breaker--;
+            assert(breaker >= 0 && "ERROR! got stuck in a loop reordering systems");
+
+            listSorted = true;
+            for (int i = 0; i < processSystemsOrdered.size(); i++)
+            {
+                ISystem *system = processSystemsOrdered[i];
+
+                std::vector<std::string> beforeRequired;
+                system->GetProcessAfter(beforeRequired);
+
+                if (beforeRequired.size() == 0)
                 {
-                    if (systems[j] == system)
-                    {
-                        bContains = true;
-                    }
+                    continue;
                 }
 
-                if (!bContains)
+                for (int j = i+1; j < processSystemsOrdered.size(); j++)
                 {
-                    std::vector<std::string> beforeRequired;
-                    system->GetProcessAfter(beforeRequired);
+                    ISystem *comp = processSystemsOrdered[j];
 
-                    int requiredCount = beforeRequired.size();
-
-                    for (int j = 0; j < processSystemsOrdered.size(); j++)
+                    for (int k = 0; k < beforeRequired.size(); ++k)
                     {
-                        for (int k = beforeRequired.size()-1; k >= 0; k--)
+                        if (comp->GetSystemName() == beforeRequired[k])
                         {
-                            if (processSystemsOrdered[j] == processSystemsOrdered[k])
-                            {
-                                requiredCount--;
-                            }
+                            listSorted = false;
+                            break;
                         }
                     }
+                    if (!listSorted)
+                        break;
+                }
 
-                    if (requiredCount == 0)
-                    {
-                        processSystemsOrdered.push_back(system);
-                    }
-                    else
-                    {
-                        allPlaced = false;
-                    }
+                if (!listSorted)
+                {
+                    // move it to the back
+                    processSystemsOrdered.erase(processSystemsOrdered.begin()+i);
+                    processSystemsOrdered.push_back(system);
+                    break;
                 }
             }
         }
 
+
         renderSystemsOrdered.clear();
-
-        loopBreaker = 1000;
-        allPlaced = false;
-
-        while (!allPlaced)
+        // Add processing systems
+        for (int i = 0; i < systems.size(); i++)
         {
-            allPlaced = true;
-            loopBreaker--;
-            if (loopBreaker <= 0)
-            {
-                assert(false && "ERROR!! some kind of requirements loop in Render Systems order requirement");
-                break;
-            }
+            ISystem *system = systems[i];
+            if (!system->GetDoesRenderTick())
+                continue;
+            renderSystemsOrdered.push_back(system);
+        }
 
-            for (int i = 0; i < systems.size(); i++)
-            {
-                ISystem *system = systems[i];
-                if (!system->GetDoesRenderTick())
-                    continue;
+        listSorted = false;
+        breaker = 500;
+        while (!listSorted)
+        {
+            breaker--;
+            assert(breaker >= 0 && "ERROR! got stuck in a loop reordering rendering systems");
 
-                bool bContains = false;
-                for (int j = 0; j < systems.size(); j++)
+            listSorted = true;
+            for (int i = 0; i < renderSystemsOrdered.size(); i++)
+            {
+                ISystem *system = renderSystemsOrdered[i];
+
+                std::vector<std::string> beforeRequired;
+                system->GetRenderAfter(beforeRequired);
+
+                if (beforeRequired.size() == 0)
                 {
-                    if (systems[j] == system)
-                    {
-                        bContains = true;
-                    }
+                    continue;
                 }
 
-                if (!bContains)
+                for (int j = i+1; j < renderSystemsOrdered.size(); j++)
                 {
-                    std::vector<std::string> beforeRequired;
-                    system->GetProcessAfter(beforeRequired);
+                    ISystem *comp = renderSystemsOrdered[j];
 
-                    int requiredCount = beforeRequired.size();
-
-                    for (int j = 0; j < renderSystemsOrdered.size(); j++)
+                    for (int k = 0; k < beforeRequired.size(); ++k)
                     {
-                        for (int k = beforeRequired.size()-1; k >= 0; k--)
+                        if (comp->GetSystemName() == beforeRequired[k])
                         {
-                            if (renderSystemsOrdered[j] == renderSystemsOrdered[k])
-                            {
-                                requiredCount--;
-                            }
+                            listSorted = false;
+                            break;
                         }
                     }
+                    if (!listSorted)
+                        break;
+                }
 
-                    if (requiredCount == 0)
-                    {
-                        renderSystemsOrdered.push_back(system);
-                    }
-                    else
-                    {
-                        allPlaced = false;
-                    }
+                if (!listSorted)
+                {
+                    // move it to the back
+                    renderSystemsOrdered.erase(renderSystemsOrdered.begin()+i);
+                    renderSystemsOrdered.push_back(system);
+                    break;
                 }
             }
         }

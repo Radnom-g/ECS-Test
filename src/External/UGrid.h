@@ -104,6 +104,14 @@ namespace Grid
     // Returns true if the specified element position is inside the grid boundaries.
     bool ugrid_in_bounds(const UGrid* grid, float mx, float my);
 
+    // Returns the position and size of the grid cell associated with a world position.
+    // Generally for debug.
+    void ugrid_get_rect(UGrid* grid, float mx, float my, float &x, float &y, float &w, float &h );
+
+    // Intended for Debug
+    // get the x,y, and contents for cells with contents.
+    void ugrid_get_contents(UGrid* grid, SmallList<int>& _outContents, SmallList<int>& _outGridX, SmallList<int>& _outGridY);
+
     // Optimizes the grid, rearranging the memory of the grid to allow cache-friendly
     // cell traversal.
     // Can be called at the end of the frame.

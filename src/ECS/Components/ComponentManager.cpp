@@ -20,11 +20,11 @@ namespace ECS
         components.clear();
     }
 
-    void ComponentManager::OnEntityDestroyed(int _entityId)
+    void ComponentManager::OnEntityDestroyed(const Entity& _entity)
     {
         for (auto iter : components)
         {
-            iter->RemoveComponentsFromEntity(_entityId);
+            iter->RemoveComponentsFromEntity(_entity);
         }
     }
 

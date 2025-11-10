@@ -7,6 +7,7 @@
 #include "WorldSettings.h"
 #include "../Entities/EntityManager.h"
 #include "Components/ComponentManager.h"
+#include "Systems/SystemManager.h"
 
 namespace ECS
 {
@@ -46,12 +47,14 @@ namespace ECS
         virtual void CreateAndRegisterComponentsInternal() {}
         virtual void InitialiseInternal() {}
         virtual void ReinitialiseInternal() {}
-        virtual void UpdateInternal(float _deltaSeconds) {}
-        virtual void RenderInternal(float _deltaTween) {}
+        virtual void UpdateInternalEarly(float _deltaSeconds) {} // before systems
+        virtual void UpdateInternalLate(float _deltaSeconds) {} // after systems
+        virtual void RenderInternalEarly(float _deltaTween) {} // before systems
+        virtual void RenderInternalLate(float _deltaTween) {} // after systems
 
         EntityManager entityManager = EntityManager();
         ComponentManager componentManager = ComponentManager();
-
+        SystemManager systemManager = SystemManager();
 
         WorldContext* worldContext = nullptr;
         WorldSettings* worldSettings = nullptr;

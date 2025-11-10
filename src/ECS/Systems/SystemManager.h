@@ -5,6 +5,8 @@
 #pragma once
 #include <vector>
 
+#include "Entities/EntityManager.h"
+
 namespace ECS
 {
     class ISystem;
@@ -18,7 +20,6 @@ namespace ECS
         void Render(float _deltaTween);
 
         void RegisterSystem(ISystem* _system);
-
 
         template <typename T>
         T* GetSystem()

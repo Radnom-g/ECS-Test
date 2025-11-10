@@ -6,31 +6,39 @@
 
 namespace ECS
 {
-    ECollisionType CollisionComponent::GetOverlapResult(int _componentIndexThis, int _componentIndexOther)
+    ECollision::ResponseType CollisionComponent::GetOverlapResult(int _componentIndexThis, int _componentIndexOther)
     {
-        ECollisionType myType = colliderResponse[_componentIndexThis];
-        if (myType == ECollisionType::Ignore) { return ECollisionType::Ignore; }
+        if (_componentIndexThis == _componentIndexOther)
+            return ECollision::ResponseType::Ignore;
 
-        ECollisionType theirType = colliderResponse[_componentIndexOther];
-        if (theirType == ECollisionType::Ignore) { return ECollisionType::Ignore; }
+        ECollision::ResponseType myType = colliderResponse[_componentIndexThis];
+        if (myType == ECollision::ResponseType::Ignore) { return ECollision::ResponseType::Ignore; }
+
+        ECollision::ResponseType theirType = colliderResponse[_componentIndexOther];
+        if (theirType == ECollision::ResponseType::Ignore) { return ECollision::ResponseType::Ignore; }
 
         // what they are.
-        CollisionFlags categoryFlagsOther = categoryFlag[_componentIndexOther];
+        const CollisionFlags& categoryFlagsOther = categoryFlag[_componentIndexOther];
 
         // What we can collide with.
-        CollisionFlags collideFlags = colliderFlag[_componentIndexThis];
+        const CollisionFlags& collideFlags = colliderFlag[_componentIndexThis];
+
         if (categoryFlagsOther & collideFlags)
         {
-            return std::min(ECollisionType::Collision, theirType); // will be degraded to overlap
+            // Both have to be allowed to collide.
+            return myType & theirType & ECollision::ResponseType::Collision;
         }
 
-        CollisionFlags overlapFlags = overlapFlag[_componentIndexThis];
-        if (categoryFlagsOther & collideFlags)
+        // What we can overlap with.
+        const CollisionFlags& overlapFlags = overlapFlag[_componentIndexThis];
+
+        if (categoryFlagsOther & overlapFlags)
         {
-            return ECollisionType::Overlap;
+            // Both have to be allowed to overlap.
+            return myType & theirType & ECollision::ResponseType::Overlap;
         }
 
-        return ECollisionType::Ignore;
+        return ECollision::ResponseType::Ignore;
     }
 
     bool CollisionComponent::InitialiseInternal(WorldContext *context, int _initialCapacity, int _maxCapacity)
@@ -40,7 +48,7 @@ namespace ECS
         colliderFlag.reserve(_initialCapacity);
         overlapFlag.reserve(_initialCapacity);
 
-        // std::vector<ECollisionType> colliderResponse{};
+        // std::vector<ECollision::Type> colliderResponse{};
         //
         // // Flags of what we 'are'
         // std::vector<uint32_t> categoryFlag{};
@@ -55,7 +63,7 @@ namespace ECS
 
     void CollisionComponent::AddComponentInternal(int _entityId, int _componentIndex)
     {
-        colliderResponse[_componentIndex] = ECollisionType::Ignore;
+        colliderResponse[_componentIndex] = ECollision::ResponseType::Ignore;
         categoryFlag[_componentIndex] = 0;
         colliderFlag[_componentIndex] = 0;
         overlapFlag[_componentIndex] = 0;
@@ -63,7 +71,7 @@ namespace ECS
 
     void CollisionComponent::ClearComponentAtIndexInternal(int _componentIndex)
     {
-        colliderResponse[_componentIndex] = ECollisionType::Ignore;
+        colliderResponse[_componentIndex] = ECollision::ResponseType::Ignore;
         categoryFlag[_componentIndex] = 0;
         colliderFlag[_componentIndex] = 0;
         overlapFlag[_componentIndex] = 0;
@@ -71,7 +79,7 @@ namespace ECS
 
     void CollisionComponent::SetCapacityInternal(int _newCapacity)
     {
-        colliderResponse.resize(_newCapacity, ECollisionType::Ignore);
+        colliderResponse.resize(_newCapacity, ECollision::ResponseType::Ignore);
         categoryFlag.resize(_newCapacity, 0);
         colliderFlag.resize(_newCapacity, 0);
         overlapFlag.resize(_newCapacity, 0);

@@ -4,6 +4,8 @@
 
 #include "MovementSystem.h"
 
+#include <debugapi.h>
+
 #include "TransformSystem.h"
 #include "../Components/ScreenWrapComponent.h"
 #include "../ECS-SFML/Worlds/SFMLWorldContext.h"
@@ -41,26 +43,88 @@ namespace ECS_SFML
             {
                 sf::Vector2f acc = velocityComponent->acceleration[vCompInd];
                 sf::Vector2f vel = velocityComponent->velocity[vCompInd];
-                sf::Vector2f fric = velocityComponent->friction[vCompInd];
+                float fric = velocityComponent->friction[vCompInd];
+                float maxSpeed = velocityComponent->maxSpeed[vCompInd];
 
                 if (!IsEmpty(acc))
                 {
                     vel += acc * _deltaTick;
                     velocityComponent->SetVelocity(vCompInd, vel);
                 }
-                if (!IsEmpty(fric))
+                if (fric > 0)
                 {
-                    vel -= fric * _deltaTick;
-                    velocityComponent->SetVelocity(vCompInd, vel);
+                    sf::Vector2f fricVec = -vel;
+                    if (!IsEmpty(fricVec))
+                    {
+                        fricVec = fricVec.normalized();
+                        fricVec *= fric;
+
+                        vel -= fricVec * _deltaTick;
+                        velocityComponent->SetVelocity(vCompInd, vel);
+                    }
                 }
                 if (!IsEmpty(vel))
                 {
-                    int tformIndex = transformComponent->GetComponentIndex(entity);
+                    // Limit speed.
+                    if (maxSpeed >= 0.0f)
+                    {
+                        float speedSq = vel.lengthSquared();
+                        if (speedSq > (maxSpeed * maxSpeed))
+                        {
+                            if (vel != sf::Vector2f(0.0f, 0.0f))
+                                vel = vel.normalized();
+                            vel *= maxSpeed;
+                            velocityComponent->SetVelocity(vCompInd, vel);
+                        }
+                    }
 
-                    // This will also update the cache.
-                    transformSystem->MoveTransform( tformIndex, vel * _deltaTick);
 
-                    MoveEntity(entity, vel * _deltaTick, EMovementType::Collide);
+                    // std::stringstream strDebug;
+                    // strDebug << "Entity #" << entity << " before move: <";
+                    // sf::Vector2f pos = transformSystem->GetEntityWorldPosition(entity);
+                    // strDebug << pos.x << ", " << pos.y << ">";
+                    // OutputDebugString(strDebug.str().c_str());
+
+                    sf::Vector2f velX = vel;
+                    sf::Vector2f velY = vel;
+                    velX.y = 0.0f;
+                    velY.x = 0.0f;
+
+                    bool bColX = false;
+                    bool bColY = false;
+                    if (abs(vel.x) > abs(vel.y))
+                    {
+                        bColX = !MoveEntity(entity, velX * _deltaTick, EMovementType::Collide);
+                        if (abs(vel.y) > 0.0f)
+                        {
+                            bColY = !MoveEntity(entity, velY * _deltaTick, EMovementType::Collide);
+                        }
+                    }
+                    else
+                    {
+                        bColY = !MoveEntity(entity, velX * _deltaTick, EMovementType::Collide);
+                        if (abs(vel.x) > 0.0f)
+                        {
+                            bColX = !MoveEntity(entity, velX * _deltaTick, EMovementType::Collide);
+                        }
+                    }
+
+                    if (bColX)
+                    {
+                        //TODO: TEMP: just reverse for now
+                        int vCompInd = velocityComponent->GetComponentIndex(entity);
+                        velocityComponent->velocity[vCompInd].x = -velocityComponent->velocity[vCompInd].x;
+                        velocityComponent->acceleration[vCompInd].x = -velocityComponent->acceleration[vCompInd].x;
+                    }
+                    if (bColY)
+                    {
+
+                        //TODO: TEMP: just reverse for now
+                        int vCompInd = velocityComponent->GetComponentIndex(entity);
+                        velocityComponent->velocity[vCompInd].y = -velocityComponent->velocity[vCompInd].y;
+                        velocityComponent->acceleration[vCompInd].y = -velocityComponent->acceleration[vCompInd].y;
+                    }
+
                 }
             }
         }
@@ -114,8 +178,30 @@ namespace ECS_SFML
     bool MovementSystem::MoveEntity(int _entity, sf::Vector2f _movement, EMovementType _movementType)
     {
         int tformIndex = transformComponent->GetComponentIndex(_entity);
+
+        sf::Vector2f newPos = transformSystem->GetWorldTransform(tformIndex).getPosition() + _movement;
+
+        std::vector<CollisionResult> results;
+        if (collisionSystem->CheckCollisions(_entity, newPos,  results))
+        {
+
+            // std::stringstream strDebug;
+            // strDebug << "Entity #" << _entity << " collision at <";
+            // strDebug << newPos.x << ", " << newPos.y << ">";
+            // strDebug << " - movement vec: <" << _movement.x << ", " << _movement.y << ">";
+            // OutputDebugString(strDebug.str().c_str());
+
+            return false;
+        }
         transformSystem->MoveTransform( tformIndex, _movement);
-        return true; //TODO: Check for collisions and return if it was blocked.
+
+        // std::stringstream strDebug;
+        // strDebug << "Entity #" << _entity << " no collision at <";
+        // strDebug << newPos.x << ", " << newPos.y << ">";
+        // strDebug << " - movement vec: <" << _movement.x << ", " << _movement.y << ">";
+        // OutputDebugString(strDebug.str().c_str());
+
+        return true;
     }
 
     bool MovementSystem::SetEntityLocation(int _entity, sf::Vector2f _newPos, EMovementType _movementType)

@@ -33,6 +33,9 @@ int main()
 
         elapsed += clock.restart();
 
+        // prevent massive ticks
+        elapsed = sf::seconds(std::min(elapsed.asSeconds(), 0.1f));
+
         // PROCESS WORLDS
         while (elapsed >= update_ms)
         {
