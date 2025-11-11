@@ -1,10 +1,13 @@
 # ECS-Test
-Creating an Entity-Component-System framework in C++ to learn more about the approach. Using the SFML for rendering and other requirements. Intended for personal research.
+Creating an Entity-Component-System framework in C++ to learn more about the approach. Using SFML3 (Simple Fast Media Library) for rendering and other requirements. Intended for personal research.
 
 Goals:
 - To learn more about Entity Component System and storing data in contiguous arrays ('structs of arrays') instead of in polymorphic data structures ('arrays of structs')
 - To implement a fixed physics timestep with interpolated visuals using the method I read about so many years ago (https://gafferongames.com/post/fix_your_timestep/) 
-- To get many entities on-screen that can change their behaviour by adding and removing components on the fly
+- To get many entities on-screen that can change their behaviour by adding and removing components on the fly without calling new/delete.
+
+
+To build, you will need to run CMake, which if you have git installed should grab the required SFML3 libraries. Visual Studio and CLion should both run this automatically if you "Open Folder". 
 
 
 

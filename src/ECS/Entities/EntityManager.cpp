@@ -2,6 +2,8 @@
 // Created by Radnom on 3/11/2025.
 //
 
+#define NOMINMAX
+
 #include "../Entities/EntityManager.h"
 
 #include <cassert>
