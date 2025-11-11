@@ -134,6 +134,6 @@ namespace ECS
         std::vector<EEntityState> state;
         std::vector<int> uniqueId;
 
-        static constexpr std::string InvalidName = std::string("Invalid");
+        static constexpr const char* InvalidName = "Invalid";
     };
 } // ECS

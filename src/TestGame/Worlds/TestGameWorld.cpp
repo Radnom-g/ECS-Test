@@ -103,7 +103,7 @@ namespace ECS_Game
             //entitiesToRotate.push_back(blockEntity);
         }
 
-        for (int ii = 0; ii < 5000; ii++)
+        for (int ii = 0; ii < 500; ii++)
         {
             Entity person = entityManager.ActivateEntity("Blobby");
 

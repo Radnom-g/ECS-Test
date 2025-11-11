@@ -12,7 +12,7 @@ namespace ECS
     {
     public:
         // Derived classes should define the following (in public scope)
-        //static constexpr std::string SystemName = "ISystem"; < replace with the class name.
+        //static constexpr const char* SystemName = "ISystem"; < replace with the class name.
 
         friend class SystemManager;
 
@@ -25,7 +25,7 @@ namespace ECS
         void Process(float _deltaSeconds);
         void Render(float _deltaTween);
 
-        virtual const std::string& GetSystemName() = 0; // { return SystemName; }
+        virtual std::string GetSystemName() = 0; // { return SystemName; }
 
         // Used to set up the order of processing
         virtual void GetProcessAfter(std::vector<std::string>& _outSystems) = 0;

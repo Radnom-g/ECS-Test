@@ -1,3 +1,6 @@
+#define NOMINMAX
+
+#include <windows.h>
 #include <debugapi.h>
 #include <iostream>
 

@@ -26,7 +26,7 @@ namespace ECS_SFML
     class TransformSystem : public ECS::ISystem
     {
     public:
-        static constexpr std::string SystemName = "TransformSystem";
+        static constexpr const char* SystemName = "TransformSystem";
 
         bool Initialise(SFMLWorldContext* _context);
 
@@ -86,7 +86,7 @@ namespace ECS_SFML
         void GetProcessAfter(std::vector<std::string> &_outSystems) override;
         void GetRenderAfter(std::vector<std::string> &_outSystems) override {}
 
-        inline const std::string& GetSystemName() override { return SystemName; }
+        inline std::string GetSystemName() override { return std::string(SystemName); }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return false; }
 

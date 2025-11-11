@@ -32,7 +32,7 @@ namespace ECS_SFML
     class RenderSystem : public ECS::ISystem
     {
     public:
-        static constexpr std::string SystemName = "RenderSystem";
+        static constexpr const char* SystemName = "RenderSystem";
         bool Initialise(SFMLWorldContext* _context);
 
         // This will create + cache if dirty
@@ -44,7 +44,7 @@ namespace ECS_SFML
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override;
 
-        inline const std::string& GetSystemName() override { return SystemName; }
+        inline std::string GetSystemName() override { return std::string(SystemName); }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return true; }
 

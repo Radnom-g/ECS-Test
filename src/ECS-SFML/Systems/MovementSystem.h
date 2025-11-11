@@ -28,7 +28,7 @@ namespace ECS_SFML
     class MovementSystem : public ECS::ISystem
     {
     public:
-        static constexpr std::string SystemName = "MovementSystem";
+        static constexpr const char* SystemName = "MovementSystem";
 
         enum EMovementType
         {
@@ -45,7 +45,7 @@ namespace ECS_SFML
         void ProcessInternal(float _deltaTick) override;
         void RenderInternal(float _deltaTween) override {}
 
-        inline const std::string& GetSystemName() override { return SystemName; }
+        inline std::string GetSystemName() override { return std::string(SystemName); }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return false; }
 

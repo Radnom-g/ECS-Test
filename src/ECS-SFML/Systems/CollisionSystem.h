@@ -51,7 +51,7 @@ namespace ECS_SFML
     class CollisionSystem: public ECS::ISystem
     {
     public:
-        static constexpr std::string SystemName = "CollisionSystem";
+        static constexpr const char* SystemName = "CollisionSystem";
         enum EMovementType
         {
             Teleport = 0,
@@ -79,7 +79,7 @@ namespace ECS_SFML
 
         void DebugProcess();
 
-        inline const std::string& GetSystemName() override { return SystemName; }
+        inline std::string GetSystemName() override { return std::string(SystemName); }
         bool GetDoesProcessTick() override { return true; }
         bool GetDoesRenderTick() override { return true; }
 

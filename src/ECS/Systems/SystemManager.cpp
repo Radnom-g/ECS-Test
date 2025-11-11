@@ -86,7 +86,7 @@ namespace ECS
 
                     for (int k = 0; k < beforeRequired.size(); ++k)
                     {
-                        if (comp->GetSystemName() == beforeRequired[k])
+                        if ( beforeRequired[k] == comp->GetSystemName())
                         {
                             listSorted = false;
                             break;
@@ -143,7 +143,7 @@ namespace ECS
 
                     for (int k = 0; k < beforeRequired.size(); ++k)
                     {
-                        if (comp->GetSystemName() == beforeRequired[k])
+                        if (beforeRequired[k] == comp->GetSystemName())
                         {
                             listSorted = false;
                             break;
