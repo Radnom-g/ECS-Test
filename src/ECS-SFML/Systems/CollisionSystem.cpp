@@ -4,6 +4,7 @@
 
 #include "CollisionSystem.h"
 
+#include <windows.h>
 #include <debugapi.h>
 
 #include "RenderSystem.h"

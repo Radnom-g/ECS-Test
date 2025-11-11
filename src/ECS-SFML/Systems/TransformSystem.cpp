@@ -4,6 +4,7 @@
 
 #include "TransformSystem.h"
 
+#include <windows.h>
 #include <debugapi.h>
 
 #include "CollisionSystem.h"

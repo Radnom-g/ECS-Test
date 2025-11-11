@@ -5,6 +5,7 @@
 #include "../Entities/EntityManager.h"
 
 #include <cassert>
+#include <windows.h>
 #include <debugapi.h>
 
 #include "../Components/ComponentManager.h"

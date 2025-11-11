@@ -4,6 +4,7 @@
 
 #include "TestGameWorld.h"
 
+#include <windows.h>
 #include <debugapi.h>
 
 #include "Components/ComponentManager.h"

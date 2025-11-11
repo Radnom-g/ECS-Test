@@ -4,6 +4,7 @@
 
 #include "MovementSystem.h"
 
+#include <windows.h>
 #include <debugapi.h>
 
 #include "TransformSystem.h"
